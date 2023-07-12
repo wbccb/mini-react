@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+<div id="root"></div>
+</body>
+
+<script src='./react.umd.development.js'></script>
+<script src='./react-dom.umd.development.js'></script>
+<script src="https://unpkg.com/babel-standalone@6/babel.js"></script>
+<script type="text/babel">
+
+    const App = function () {
+        return (
+            <div>
+                <span>测试</span>
+                <input/>
+            </div>
+        );
+    }
+
+    ReactDOM.render(
+        <App/>,
+        document.getElementById('root')
+    );
+</script>
+</html>
