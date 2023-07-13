@@ -91,10 +91,13 @@ import styles from "index.css";
 
 ## CSS-in-JS
 
-一种解决方案，跟内联style不同
+一种解决方案，跟内联style不同，`CSS-in-JS`最终编译会形成一个class，因此可以进行复用
 
 - `styled-component`
+- `styled-jsx`
+- `emotion`
 
+> 上面三种方式的本质四项基本都是一样
 
 ### styled-component
 
@@ -117,4 +120,34 @@ const Button = styled.button`
 <Button></Button>
 ```
 
+` styled.button`` `本质就是`styled.button()`
 
+
+### styled-jsx
+
+在`.ts`文件中限制较多，可以在`.js`中使用
+
+```js
+export default () => (
+  <div className="root">
+    <style jsx>{`
+      .root {
+        color: green;
+      }
+    `}</style>
+  </div>
+)
+```
+
+
+### emotion
+
+在`.ts`文件中限制较多，可以在`.js`中使用
+
+
+### 总结
+
+- 优点： 使用JS，可以使用逻辑和变量，非常灵活
+- 缺点： JSX和样式代码混合在一起，可读性变差，增加了编译成本
+
+如果项目没有灵活使用CSS的需求，我们应该直接使用`CSS Module`的方式
