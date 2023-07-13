@@ -375,6 +375,9 @@ export const selectAllNotifications = state => state.notifications
 ```
 # 常见的hooks
 ## 1. useState
+
+> 如果我们不需要在`jsx`中使用响应式变量的话，就不要使用`useState`管理它
+
 ```jsx
 const [state, setState] = useState({});
 setState(prevState => {
@@ -389,7 +392,87 @@ const [state, setState] = useState(() => {
   return initialState;
 });
 ```
+
+### state的特点
+
+#### 异步更新
+
+由于异步更新，因此`setCount()`之后马上打印`count`不能马上拿到最新的值
+
+```js
+const [count, setCount] = useState(1);
+function test() {
+    setCount(count+1);
+    console.log("目前的count", count);
+}
+```
+
+#### 渲染合并
+
+就算我们执行多次`setCount()`，由于异步更新，因此多次`setCount()`的`count`都是一样的！
+
+```js
+const [count, setCount] = useState(1);
+function test() {
+    setCount(count+1);
+    setCount(count+1);
+    setCount(count+1);
+    setCount(count+1);
+    setCount(count+1);
+}
+```
+
+为了让每次更新都能拿到最新的值，我们可以改为方法的模式，即
+```jsx
+const [count, setCount] = useState(1);
+function test() {
+    setCount((count)=> count+1);
+    setCount((count)=> count+1);
+    setCount((count)=> count+1);
+    setCount((count)=> count+1);
+    setCount((count)=> count+1);
+}
+```
+
+#### 不可变数据
+
+不可以直接改变count，即`count=count+2`，而必须通过`setCount()`传入一个新的值
+
+```js
+const [count, setCount] = useState(1);
+function test() {
+    setCount(count+1);
+    setCount(count+1);
+    setCount(count+1);
+    setCount(count+1);
+    setCount(count+1);
+}
+```
+
+
+### 使用immer + useState
+
+代替`setState`进行数据的管理，可以解决不可变数据每次都得传入一个新的值的问题
+
+> 有时候会忘记传入新的值，可能没有进行旧的值的一些属性的合并
+
+```js
+import produce from "immer";
+
+const [list, setList] = useState([]);
+setList(produce(draft => {
+    draft.push("item1"); // 不用传入新的值，直接对数据进行操作
+}))
+```
+
+
 ## 2. useEffect
+
+> React18开始，`useEffect()`在`开发环境下`会执行两次，是为了提早检测`useEffect()`是否写的有问题，有没有正确写对应的销毁函数！免得生产环境报错
+
+
+> React18，生产环境只会触发一次`useEffect()`
+
 ```jsx
 export const useMount = (callback)=>{
     useEffect(()=>{
@@ -473,9 +556,11 @@ function RenderPrimes({iterations, multiplier}) {
 ```
 使用了useMemo后，每次重新渲染RenderPrimes时就不会重新创建primes对象，也不会重新执行一遍�耗时的calculatePrimes()方法
 ## 6. useRef和createRef
+
+
 ### (1) 不同点
-useRef创建的对象在每一次组件重新渲染时都不会重新创建，一直保持着原有对象的引用
-createRef创建的对象在每一次组件重新渲染时都会重新执行一次，重新创建一个新的ref对象
+- useRef创建的对象在每一次组件重新渲染时都不会重新创建，一直保持着原有对象的引用
+- createRef创建的对象在每一次组件重新渲染时都会重新执行一次，重新创建一个新的ref对象
 ### (2) 相同点
 用于对子组件的引用
 ```jsx
@@ -492,8 +577,21 @@ function TextInputWithFocusButton() {
     </>
   );
 }
-
 ```
+
+### useRef
+
+`useRef`也可以用于普通的JS变量，但是不会触发`render()`，比如下面改变了`nameRef`的值不会触发界面的重新渲染
+
+```js
+const nameRef = useRef("test");
+function changeName () {
+    nameRef.current = "test11";
+}
+
+return <p>{nameRef.current}</p>
+```
+
 ## 7. useSearchParams以及常见用法
 // TODO
 
