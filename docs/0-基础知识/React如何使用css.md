@@ -71,12 +71,13 @@ import "index.css";
 > 上面这种方法可以自由使用类名
 
 
-> 使用`create-react-app`天然支持CSS Module
+> 使用`create-react-app`天然支持CSS Module，但是我们命令必须以`.module.css`显式告诉React是module类型
 
 会自动对类名增加后缀，形式对应的Module
 
+
 ```js
-import styles from "index.css";
+import styles from "index.module.css";
 
 <div className={styles['list-item']}></div>
 ```
@@ -85,7 +86,7 @@ import styles from "index.css";
 ## 使用Sass Module
 > 使用`create-react-app`天然支持Sass Module
 
-安装`sass`，然后将文件名改为`.scss`即可使用
+安装`sass`，然后将文件名改为`.module.scss`即可使用
 
 
 
