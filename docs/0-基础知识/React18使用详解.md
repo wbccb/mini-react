@@ -457,12 +457,46 @@ function test() {
 > 有时候会忘记传入新的值，可能没有进行旧的值的一些属性的合并
 
 ```js
-import produce from "immer";
+import React, { useCallback, useState } from "react";
+import {produce} from "immer";
 
-const [list, setList] = useState([]);
-setList(produce(draft => {
-    draft.push("item1"); // 不用传入新的值，直接对数据进行操作
-}))
+const TodoList = () => {
+    const [todos, setTodos] = useState([
+        {
+            id: "React",
+            title: "Learn React",
+            done: true
+        },
+        {
+            id: "Immer",
+            title: "Try Immer",
+            done: false
+        }
+    ]);
+
+    const handleToggle = useCallback((id) => {
+        setTodos(
+            produce((draft) => {
+                const todo = draft.find((todo) => todo.id === id);
+                todo.done = !todo.done;
+            })
+        );
+    }, []);
+
+    const handleAdd = useCallback(() => {
+        setTodos(
+            produce((draft) => {
+                draft.push({
+                    id: "todo_" + Math.random(),
+                    title: "A new todo",
+                    done: false
+                });
+            })
+        );
+    }, []);
+
+    return (<div>{*/ See CodeSandbox */}</div>)
+}
 ```
 
 

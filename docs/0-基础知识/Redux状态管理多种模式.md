@@ -104,6 +104,62 @@ export default function Counter() {
 - 在子元素中，使用`useSelect()`获取对应的`state.模块`，使用`useDispatch()`获取`dispatch`，然后进行`dispatch(fn1)`，这个`fn1`就是`createSlice()`创建的`function`
 
 
+### Redux Toolkit and Immer
+
+> https://redux-toolkit.js.org/usage/immer-reducers#reducers-and-immutable-updates
+
+1. Redux Toolkit的createSlice本质使用createReducer, createReducer内部自动使用immer，因此可以直接操作state 
+```js
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: [],
+  reducers: {
+    todoAdded(state, action) {
+      state.push(action.payload)
+    },
+  },
+})
+```
+2. 也可以直接return一个值，会自动替换旧的值
+```js
+const initialState = []
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState,
+  reducers: {
+    brokenTodosLoadedReducer(state, action) {
+      // ❌ ERROR: does not actually mutate or return anything new!
+      state = action.payload
+    },
+    fixedTodosLoadedReducer(state, action) {
+      // ✅ CORRECT: returns a new value to replace the old one
+      return action.payload
+    },
+    correctResetTodosReducer(state, action) {
+      // ✅ CORRECT: returns a new value to replace the old one
+      return initialState
+    },
+  },
+})
+```
+3. 使用`current`进行`Proxy`数据的解构
+
+```js
+import { current } from '@reduxjs/toolkit'
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: todosAdapter.getInitialState(),
+  reducers: {
+    todoToggled(state, action) {
+      // ❌ ERROR: logs the Proxy-wrapped data
+      console.log(state)
+      // ✅ CORRECT: logs a plain JS copy of the current data
+      console.log(current(state))
+    },
+  },
+})
+```
+
 ### Redux DevTools
 
 谷歌插件，可以进行数据的变化
