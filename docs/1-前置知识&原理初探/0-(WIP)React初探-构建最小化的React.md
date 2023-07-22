@@ -286,7 +286,7 @@ miniReact.render(
 上面元素对应的`fiber tree`就是
 ![fiber tree](https://wbccb.github.io/Frontend-Articles/image/fiber1.png)
 
-然后我们就可以改造`render()`和``
+然后我们就可以改造`render()`
 
 ```javascript
 function render(element, container) {
@@ -511,7 +511,7 @@ const miniReact = {
         const domParent = fiber.parent.dom;
         domParent.appendChild(fiber.dom);
         this.commitWork(fiber.child);
-        this.commitRoot(fiber.sibling);
+        this.commitWork(fiber.sibling);
     },
     workLoop(deadline) {
         // ...

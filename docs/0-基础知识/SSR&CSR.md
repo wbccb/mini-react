@@ -23,6 +23,13 @@
 2. Nuxt.js: Vue
 3. Nest.js: 纯后端框架
 
+
+## Next.js
+### pre-render
+
+1. `Static Generation`: 直接生成完整的HTML文件
+2. `Server-side rendering`: 每次请求时动态生成HTML文件（一般是需要到数据库中获取数据进行整合到HTML）
+
 # CSR
 > 客户端渲染
 
