@@ -630,7 +630,7 @@ const miniReact = {
         }
 
         this.commitWork(fiber.child);
-        this.commitRoot(fiber.sibling);
+        this.commitWork(fiber.sibling);
     },
     updateDom(dom, prevProps, nextProps) {
         const isProperty = key => key !== "children";
