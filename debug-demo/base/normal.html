@@ -17,17 +17,32 @@
 <script type="text/babel">
 
     const App = function () {
+
+        const [testValue, setTestValue] = React.useState("11");
+        console.log("重新更新");
+
         return (
             <div>
                 <span>测试</span>
-                <input/>
+                <input value={testValue} onChange={(event) => setTestValue(event.target.value)}/>
             </div>
         );
     }
 
-    ReactDOM.render(
-        <App/>,
-        document.getElementById('root')
+    const domNode = document.getElementById('root');
+    const root = ReactDOM.createRoot(domNode);
+    root.render(
+        <React.StrictMode>
+            <App/>
+        </React.StrictMode>
     );
+
+
+    // 下面这种写法会触发legacyRenderSubtreeIntoContainer()同步模式的创建
+    // 上面的写法才会触发并发模式的创建
+    // ReactDOM.render(
+    //     <App/>,
+    //     document.getElementById('root')
+    // );
 </script>
 </html>
