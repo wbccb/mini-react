@@ -21,21 +21,40 @@
         const [testValue, setTestValue] = React.useState("11");
         console.log("重新更新");
 
+        const array = new Array(100).fill(0);
+
+        const mockLongTask = ()=> {
+            let count = 0;
+            for(let i=0; i<100; i++) {
+                count = (count + i)%100;
+            }
+            console.log(count);
+        }
+
         return (
             <div>
                 <span>测试</span>
-                <input value={testValue} onChange={(event) => setTestValue(event.target.value)}/>
+                {
+                    array.map((item, index) => {
+                        return ( <input key={index} value={testValue+index} onChange={(event) => {
+                            setTestValue(event.target.value);
+                            mockLongTask();
+                        }}/>)
+                    })
+                }
             </div>
         );
     }
 
     const domNode = document.getElementById('root');
     const root = ReactDOM.createRoot(domNode);
-    root.render(
-        <React.StrictMode>
+    // 使用React.startTransition才会启动时间切片：https://github.com/facebook/react/issues/24392
+    React.startTransition(() => {
+        root.render(
             <App/>
-        </React.StrictMode>
-    );
+        );
+    })
+
 
 
     // 下面这种写法会触发legacyRenderSubtreeIntoContainer()同步模式的创建
