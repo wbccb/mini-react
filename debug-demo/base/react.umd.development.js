@@ -1,6 +1,6 @@
 /**
  * @license React
- * react.umd.development.js
+ * react.development.js
  *
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
@@ -9,8 +9,8 @@
  */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-  typeof define === 'function' && define.amd ? define(['exports'], factory) :
-  (global = global || self, factory(global.React = {}));
+      typeof define === 'function' && define.amd ? define(['exports'], factory) :
+          (global = global || self, factory(global.React = {}));
 }(this, (function (exports) { 'use strict';
 
   // TODO: this is special because it gets imported during build.
@@ -21,7 +21,7 @@
   // TODO: This module is used both by the release scripts and to expose a version
   // at runtime. We should instead inject the version number as part of the build
   // process, and use the ReactVersions.js module as the single source of truth.
-  var ReactVersion = '18.2.0';
+  var ReactVersion = '18.3.1';
 
   // ATTENTION
   // When adding new symbols to this file,
@@ -599,11 +599,11 @@
         if (isValidElement(mappedChild)) {
 
           mappedChild = cloneAndReplaceKey(mappedChild, // Keep both the (mapped) and old keys if they differ, just as
-          // traverseAllChildren used to do for objects as children
-          escapedPrefix + ( // $FlowFixMe Flow incorrectly thinks React.Portal doesn't have a key
-          mappedChild.key && (!_child || _child.key !== mappedChild.key) ? // $FlowFixMe Flow incorrectly thinks existing element's key can be a number
-          // eslint-disable-next-line react-internal/safe-string-coercion
-          escapeUserProvidedKey('' + mappedChild.key) + '/' : '') + childKey);
+              // traverseAllChildren used to do for objects as children
+              escapedPrefix + ( // $FlowFixMe Flow incorrectly thinks React.Portal doesn't have a key
+                  mappedChild.key && (!_child || _child.key !== mappedChild.key) ? // $FlowFixMe Flow incorrectly thinks existing element's key can be a number
+                      // eslint-disable-next-line react-internal/safe-string-coercion
+                      escapeUserProvidedKey('' + mappedChild.key) + '/' : '') + childKey);
         }
 
         array.push(mappedChild);
@@ -1659,6 +1659,7 @@
   exports.Suspense = REACT_SUSPENSE_TYPE;
   exports.SuspenseList = REACT_SUSPENSE_LIST_TYPE;
   exports.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = ReactSharedInternals$1;
+  exports.act = act;
   exports.cloneElement = cloneElement$1;
   exports.createContext = createContext;
   exports.createElement = createElement$1;
