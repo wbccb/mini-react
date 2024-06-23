@@ -23,15 +23,15 @@
 
         const array = new Array(100).fill(0);
 
-        const mockLongTask = ()=> {
+        const mockLongTask = () => {
             let count = 0;
-            for(let i=0; i<100; i++) {
-                count = (count + i)%100;
+            for (let i = 0; i < 100; i++) {
+                count = (count + i) % 100;
             }
             console.log(count);
         }
 
-        React.useEffect(()=> {
+        React.useEffect(() => {
             console.error("useEffect执行");
         }, [testValue]);
 
@@ -40,7 +40,7 @@
                 <span>测试</span>
                 {
                     array.map((item, index) => {
-                        return ( <input key={index} value={testValue+index} onChange={(event) => {
+                        return (<input key={index} value={testValue + index} onChange={(event) => {
                             setTestValue(event.target.value);
                             mockLongTask();
                         }}/>)
@@ -62,9 +62,8 @@
 
     // 下面这种写法会触发legacyRenderSubtreeIntoContainer()同步模式的创建
     // 上面的写法才会触发并发模式的创建
-    ReactDOM.render(
-        <App/>,
-        document.getElementById('root')
+    root.render(
+        <App/>
     );
 </script>
 </html>

@@ -20263,7 +20263,8 @@
             }
 
             return currentEventTransitionLane;
-        } // Updates originating inside certain React methods, like flushSync, have
+        }
+        // Updates originating inside certain React methods, like flushSync, have
         // their priority set by tracking it with a context variable.
         //
         // The opaque type returned by the host config is internally a lane, so we can
@@ -22713,7 +22714,7 @@
     }
 
     function updateContainer(element, container, parentComponent, callback) {
-
+        debugger;
         var current = container.current;
         var eventTime = requestEventTime();
         var lane = requestUpdateLane(current);
