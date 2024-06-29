@@ -16,36 +16,63 @@
 <script src="./babel.js"></script>
 <script type="text/babel">
 
-    const App = function () {
 
-        const [testValue, setTestValue] = React.useState("11");
+    // class Child1_Child extends React.Component {
+    //     render() {
+    //         return <div id="Child1_Child"></div>;
+    //     }
+    // }
+
+    // const Child1_Child = function () {
+    //     return <div id="Child1_Child"></div>;
+    // }
+
+    const Child1_Child = function () {
+        return {
+            render() {
+                return <div id="Child1_Child">我是Child1_Child</div>;
+            }
+        }
+    }
+
+    const Child1 = function () {
+        return (
+            <div id="Child1">
+                <Child1_Child/>
+            </div>
+        )
+    }
+    const Child2 = function () {
+        return <div id="Child2"></div>;
+    }
+
+    const Parent = function () {
+        return (
+            <div id="Parent">
+                <Child1/>
+                <Child2/>
+            </div>
+        )
+    }
+
+    const App = function () {
+        const [testValue, setTestValue] = React.useState("我是useEffect测试");
         console.log("重新更新");
 
-        const array = new Array(100).fill(0);
-
-        const mockLongTask = () => {
-            let count = 0;
-            for (let i = 0; i < 100; i++) {
-                count = (count + i) % 100;
-            }
-            console.log(count);
-        }
+        React.useEffect(() => {
+            setTimeout(()=> {
+                setTestValue("useEffect测试更新");
+            }, 5000);
+        }, []);
 
         React.useEffect(() => {
             console.error("useEffect执行");
         }, [testValue]);
 
         return (
-            <div>
-                <span>测试</span>
-                {
-                    array.map((item, index) => {
-                        return (<input key={index} value={testValue + index} onChange={(event) => {
-                            setTestValue(event.target.value);
-                            mockLongTask();
-                        }}/>)
-                    })
-                }
+            <div id="App">
+                <span id="App-Child1">{testValue}</span>
+                <Parent></Parent>
             </div>
         );
     }

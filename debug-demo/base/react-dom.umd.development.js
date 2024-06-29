@@ -3361,6 +3361,7 @@
     }
 
     function getNextLanes(root, wipLanes) {
+        
         // Early bailout if there's no pending work left.
         var pendingLanes = root.pendingLanes;
 
@@ -3370,7 +3371,8 @@
 
         var nextLanes = NoLanes;
         var suspendedLanes = root.suspendedLanes;
-        var pingedLanes = root.pingedLanes; // Do not work on any idle work until all the non-idle work has finished,
+        var pingedLanes = root.pingedLanes;
+        // Do not work on any idle work until all the non-idle work has finished,
         // even if the work is suspended.
 
         var nonIdlePendingLanes = pendingLanes & NonIdleLanes;
@@ -11075,7 +11077,6 @@
     }
 
     function enqueueUpdate(fiber, queue, update, lane) {
-        debugger;
         // Don't update the `childLanes` on the return path yet. If we already in
         // the middle of rendering, wait until after it has completed.
         concurrentQueues[concurrentQueuesIndex++] = fiber;
@@ -15393,6 +15394,7 @@
             typeof value === 'object' && value !== null && typeof value.render === 'function' && value.$$typeof === undefined) {
 
 
+            debugger;
             workInProgress.tag = ClassComponent; // Throw out any hooks that were used.
 
             workInProgress.memoizedState = null;
@@ -16541,6 +16543,9 @@
     }
 
     function beginWork(current, workInProgress, renderLanes) {
+        if(getComponentNameFromFiber(workInProgress) !== "div") {
+            console.warn("render阶段-beginWork", getComponentNameFromFiber(workInProgress), workInProgress.stateNode);
+        }
 
         if (current !== null) {
             var oldProps = current.memoizedProps;
@@ -16621,6 +16626,7 @@
             }
 
             case ClassComponent: {
+                debugger;
                 var _Component = workInProgress.type;
                 var _unresolvedProps = workInProgress.pendingProps;
 
@@ -17071,6 +17077,9 @@
     }
 
     function completeWork(current, workInProgress, renderLanes) {
+        if(getComponentNameFromFiber(workInProgress) !== "div") {
+            console.error("render阶段-completeWork", getComponentNameFromFiber(workInProgress), workInProgress.stateNode);
+        }
         var newProps = workInProgress.pendingProps; // Note: This intentionally doesn't check if we're hydrating because comparing
         // to the current tree provider fiber is just as fast and less error-prone.
         // Ideally we would have a special version of the work loop only
@@ -20230,6 +20239,7 @@
     function requestUpdateLane(fiber) {
         // Special cases
         var mode = fiber.mode;
+        
 
         if ((mode & ConcurrentMode) === NoMode) {
             return SyncLane;
@@ -20303,6 +20313,7 @@
     }
 
     function scheduleUpdateOnFiber(root, fiber, lane, eventTime) {
+        
         checkForNestedUpdates();
 
 
@@ -20386,6 +20397,7 @@
     // exiting a task.
 
     function ensureRootIsScheduled(root, currentTime) {
+        
         var existingCallbackNode = root.callbackNode; // Check if any lanes are being starved by other work. If so, mark them as
         // expired so we know to work on those next.
 
@@ -20454,6 +20466,7 @@
         } else {
             var schedulerPriorityLevel;
 
+            
             switch (lanesToEventPriority(nextLanes)) {
                 case DiscreteEventPriority:
                     schedulerPriorityLevel = ImmediatePriority;
@@ -21187,6 +21200,7 @@
         // If the root or lanes have changed, throw out the existing stack
         // and prepare a fresh one. Otherwise we'll continue where we left off.
 
+        
         if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
             if (isDevToolsPresent) {
                 var memoizedUpdaters = root.memoizedUpdaters;
@@ -21468,6 +21482,8 @@
     }
 
     function commitRootImpl(root, recoverableErrors, transitions, renderPriorityLevel) {
+        console.info("commit阶段", root);
+
         do {
             // `flushPassiveEffects` will call `flushSyncUpdateQueue` at the end, which
             // means `flushPassiveEffects` will sometimes result in additional
@@ -21584,7 +21600,7 @@
                 recordCommitTime();
             }
 
-            debugger;
+            
 
             commitMutationEffects(root, finishedWork, lanes);
 
@@ -22714,7 +22730,7 @@
     }
 
     function updateContainer(element, container, parentComponent, callback) {
-        debugger;
+        
         var current = container.current;
         var eventTime = requestEventTime();
         var lane = requestUpdateLane(current);
