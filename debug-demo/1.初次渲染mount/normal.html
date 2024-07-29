@@ -59,11 +59,20 @@
         const [testValue, setTestValue] = React.useState("我是useEffect测试");
         console.log("重新更新");
 
+
         React.useEffect(() => {
             setTimeout(()=> {
                 setTestValue("useEffect测试更新");
             }, 5000);
+
+            return ()=> {
+                console.error("useEffect cleanup");
+            }
         }, []);
+
+        React.useLayoutEffect(()=> {
+            console.info("我是useLayoutEffect");
+        })
 
         React.useEffect(() => {
             console.error("useEffect执行");

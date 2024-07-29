@@ -3361,7 +3361,7 @@
     }
 
     function getNextLanes(root, wipLanes) {
-        
+
         // Early bailout if there's no pending work left.
         var pendingLanes = root.pendingLanes;
 
@@ -16543,7 +16543,7 @@
     }
 
     function beginWork(current, workInProgress, renderLanes) {
-        if(getComponentNameFromFiber(workInProgress) !== "div") {
+        if (getComponentNameFromFiber(workInProgress) !== "div") {
             console.warn("render阶段-beginWork", getComponentNameFromFiber(workInProgress), workInProgress.stateNode);
         }
 
@@ -17077,7 +17077,7 @@
     }
 
     function completeWork(current, workInProgress, renderLanes) {
-        if(getComponentNameFromFiber(workInProgress) !== "div") {
+        if (getComponentNameFromFiber(workInProgress) !== "div") {
             console.error("render阶段-completeWork", getComponentNameFromFiber(workInProgress), workInProgress.stateNode);
         }
         var newProps = workInProgress.pendingProps; // Note: This intentionally doesn't check if we're hydrating because comparing
@@ -18122,22 +18122,18 @@
                     effect.destroy = undefined;
 
                     if (destroy !== undefined) {
-                        {
-                            if ((flags & Passive$1) !== NoFlags$1) {
-                                markComponentPassiveEffectUnmountStarted(finishedWork);
-                            } else if ((flags & Layout) !== NoFlags$1) {
-                                markComponentLayoutEffectUnmountStarted(finishedWork);
-                            }
+                        console.warn("effect destory", destroy);
+
+                        if ((flags & Passive$1) !== NoFlags$1) {
+                            markComponentPassiveEffectUnmountStarted(finishedWork);
+                        } else if ((flags & Layout) !== NoFlags$1) {
+                            markComponentLayoutEffectUnmountStarted(finishedWork);
                         }
-
                         safelyCallDestroy(finishedWork, nearestMountedAncestor, destroy);
-
-                        {
-                            if ((flags & Passive$1) !== NoFlags$1) {
-                                markComponentPassiveEffectUnmountStopped();
-                            } else if ((flags & Layout) !== NoFlags$1) {
-                                markComponentLayoutEffectUnmountStopped();
-                            }
+                        if ((flags & Passive$1) !== NoFlags$1) {
+                            markComponentPassiveEffectUnmountStopped();
+                        } else if ((flags & Layout) !== NoFlags$1) {
+                            markComponentLayoutEffectUnmountStopped();
                         }
                     }
                 }
@@ -18169,6 +18165,7 @@
                     var create = effect.create;
 
                     effect.destroy = create();
+                    debugger;
 
                     {
                         if ((flags & Passive$1) !== NoFlags$1) {
@@ -20239,7 +20236,7 @@
     function requestUpdateLane(fiber) {
         // Special cases
         var mode = fiber.mode;
-        
+
 
         if ((mode & ConcurrentMode) === NoMode) {
             return SyncLane;
@@ -20313,7 +20310,7 @@
     }
 
     function scheduleUpdateOnFiber(root, fiber, lane, eventTime) {
-        
+
         checkForNestedUpdates();
 
 
@@ -20397,7 +20394,7 @@
     // exiting a task.
 
     function ensureRootIsScheduled(root, currentTime) {
-        
+
         var existingCallbackNode = root.callbackNode; // Check if any lanes are being starved by other work. If so, mark them as
         // expired so we know to work on those next.
 
@@ -20466,7 +20463,7 @@
         } else {
             var schedulerPriorityLevel;
 
-            
+
             switch (lanesToEventPriority(nextLanes)) {
                 case DiscreteEventPriority:
                     schedulerPriorityLevel = ImmediatePriority;
@@ -21200,7 +21197,7 @@
         // If the root or lanes have changed, throw out the existing stack
         // and prepare a fresh one. Otherwise we'll continue where we left off.
 
-        
+
         if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
             if (isDevToolsPresent) {
                 var memoizedUpdaters = root.memoizedUpdaters;
@@ -21600,7 +21597,6 @@
                 recordCommitTime();
             }
 
-            
 
             commitMutationEffects(root, finishedWork, lanes);
 
@@ -22730,7 +22726,7 @@
     }
 
     function updateContainer(element, container, parentComponent, callback) {
-        
+
         var current = container.current;
         var eventTime = requestEventTime();
         var lane = requestUpdateLane(current);
