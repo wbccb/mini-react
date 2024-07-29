@@ -1,0 +1,22 @@
+{
+  "name": "react-dom",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/react-dom.js",
+  "types": "./dist/main.d.ts",
+  "exports": {
+    ".": "./dist/main.js",
+    "./client": "./dist/client.js"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build --watch",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vite": "^5.3.4",
+    "vite-plugin-dts": "4.0.0-beta.1"
+  }
+}
