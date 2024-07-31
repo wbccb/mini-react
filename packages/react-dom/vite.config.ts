@@ -7,11 +7,14 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
-        "main": resolve(__dirname, 'src/main.ts'),
-        "client": resolve(__dirname, 'src/client/index.ts'),
-      }
+        "client": resolve(__dirname, '/client.ts'),
+      },
+      formats: ["umd"]
     }
   },
   resolve: {alias: {src: resolve('src/')}},
-  plugins: [dts()],
+  plugins: [dts({
+    include: ['./src/**/*'],
+    copyDtsFiles: true,
+  })],
 })
