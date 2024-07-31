@@ -6,15 +6,17 @@ import dts from "vite-plugin-dts";
 export default defineConfig({
 	build: {
 		lib: {
-			entry: {
-				"index": resolve(__dirname, "index.ts"),
-			},
+			entry: resolve(__dirname, "src/index.ts"),
+			name: "index",
+			// the proper extensions will be added
+			fileName: "index",
+			formats: ["es"],
 		},
 	},
 	resolve: { alias: { src: resolve("src/") } },
 	plugins: [
 		dts({
-			include: ["./src/**/*"],
+			include: ["./src/**/*", "index.ts"],
 			copyDtsFiles: true,
 		}),
 	],
