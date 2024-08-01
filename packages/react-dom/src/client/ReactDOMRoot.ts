@@ -1,8 +1,8 @@
-import { createContainer } from "react-reconciler";
+import { createContainer, updateContainer } from "react-reconciler";
 // @ts-ignore
 import type { FiberRoot } from "react-reconciler/src/ReactInternalTypes";
 import { listenToAllSupportedEvents } from "../events/DOMPluginEventSystem.ts";
-
+import { ReactNodeList } from "shared/ReactTypes.ts";
 export type RootType = ReactDOMRoot;
 class ReactDOMRoot {
 	private _internalRoot: FiberRoot;
@@ -10,8 +10,9 @@ class ReactDOMRoot {
 		this._internalRoot = internalRoot;
 	}
 
-	render(dom: HTMLElement) {
-		console.log("ReacteDOMRoot render", dom, this._internalRoot);
+	render(children: ReactNodeList) {
+		const root = this._internalRoot;
+		updateContainer(children, root);
 	}
 
 	unmount() {}
