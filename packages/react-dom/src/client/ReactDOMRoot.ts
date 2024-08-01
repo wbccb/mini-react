@@ -19,7 +19,7 @@ class ReactDOMRoot {
 
 function createRoot(container: HTMLElement): RootType {
 	console.error("ReactDomRoot.ts createRoot", container);
-	var root = createContainer();
+	var root = createContainer(container);
 	listenToAllSupportedEvents(container);
 	return new ReactDOMRoot(root);
 }

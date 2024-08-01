@@ -1,3 +1,5 @@
+import { FiberNode } from "./ReactFiber.ts";
+
 export interface FiberRoot {}
 
-export interface Fiber {}
+export type Fiber = FiberNode;
