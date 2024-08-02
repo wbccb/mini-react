@@ -1,5 +1,15 @@
-import { Lane, Lanes, NoLanes } from "./ReactFiberLane.ts";
-import { Fiber } from "./ReactInternalTypes.ts";
+import {
+	Lane,
+	Lanes,
+	NoLane,
+	NoLanes,
+	pickArbitraryLane,
+	SyncLane,
+} from "./ReactFiberLane.ts";
+import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
+import { ConcurrentMode, NoMode } from "./ReactTypeOfMode.ts";
+import { getCurrentUpdatePriority } from "./ReactEventPriorities.ts";
+import { getCurrentEventPriority } from "react-dom/client/ReactDOMHostConfig";
 
 type ExecutionContext = number;
 
@@ -11,7 +21,11 @@ const NoContext = /*             */ 0b000;
 const BatchedContext = /*               */ 0b001;
 const RenderContext = /*                */ 0b010;
 const CommitContext = /*                */ 0b100;
+
 let executionContext: ExecutionContext = NoContext;
+let workInProgressRoot: FiberRoot | null = null;
+let workInProgress: Fiber | null = null;
+let workInProgressRootRenderLanes: Lanes = NoLanes;
 
 function now() {
 	return window.performance.now();
@@ -32,6 +46,25 @@ function requestEventTime() {
 	return currentEventTime;
 }
 
-function requestUpdateLane(fiber: Fiber): Lane {}
+function requestUpdateLane(fiber: Fiber): Lane {
+	const mode = fiber.mode;
+	if ((mode && ConcurrentMode) === NoMode) {
+		return SyncLane as Lane;
+	} else if (
+		(executionContext & RenderContext) !== NoContext &&
+		workInProgressRootRenderLanes !== NoLanes
+	) {
+		// 当前executionContext状态=RenderContext
+		return pickArbitraryLane(workInProgressRootRenderLanes);
+	}
+
+	const updateLane: Lane = getCurrentUpdatePriority();
+	if (updateLane !== NoLane) {
+		return updateLane;
+	}
+
+	const eventLane: Lane = getCurrentEventPriority();
+	return eventLane;
+}
 
 export { NoTimestamp, NoContext, requestEventTime, requestUpdateLane };

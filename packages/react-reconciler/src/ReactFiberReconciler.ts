@@ -21,14 +21,14 @@ function updateContainer(element: ReactNodeList, container: FiberRoot) {
 	const current: Fiber = container.current as Fiber;
 	const eventTime = requestEventTime();
 
-	const lane = requestUpdateLane(current!);
-	const update = createUpdate(eventTime, lane);
+	const lane = requestUpdateLane(current!); // 获取Fiber的lane
+	const update = createUpdate(eventTime, lane); // 根据lane创建update
 	update.payload = {};
 
-	const root = enqueueUpdate(current, update, lane);
+	const root = enqueueUpdate(current, update, lane); // 将fiber对应的update放入到队列中
 	if (root !== null) {
-		scheduleUpdateOnFiber(root, current, lane, eventTime);
-		entangleTransitions(root, current, lane);
+		scheduleUpdateOnFiber(root, current, lane, eventTime); // 处理队列
+		entangleTransitions(root, current, lane); // 并发相关处理
 	}
 
 	return lane;

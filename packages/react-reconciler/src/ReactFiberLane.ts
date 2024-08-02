@@ -53,3 +53,15 @@ export const IdleHydrationLane: Lane = /*               */ 0b0010000000000000000
 export const IdleLane: Lane = /*                        */ 0b0100000000000000000000000000000;
 
 export const OffscreenLane: Lane = /*                   */ 0b1000000000000000000000000000000;
+
+export function pickArbitraryLane(lanes: Lanes): Lane {
+	return getHighestPriorityLane(lanes);
+}
+
+export function getHighestPriorityLane(lanes: Lanes): Lane {
+	return lanes & -lanes;
+}
+
+export function mergeLanes(a: Lanes | Lane, b: Lanes | Lane) {
+	return a | b;
+}
