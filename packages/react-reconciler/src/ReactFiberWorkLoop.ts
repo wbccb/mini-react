@@ -5,6 +5,9 @@ import {
 	NoLanes,
 	pickArbitraryLane,
 	SyncLane,
+	markStarvedLanesAsExpired,
+	getNextLanes,
+	getHighestPriorityLane,
 } from "./ReactFiberLane.ts";
 import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
 import { ConcurrentMode, NoMode } from "./ReactTypeOfMode.ts";
@@ -17,6 +20,7 @@ import { getCurrentEventPriority } from "react-dom/client";
 import {
 	NormalPriority as NormalSchedulerPriority,
 	scheduleCallback,
+	cancelCallback,
 } from "shared";
 type ExecutionContext = number;
 

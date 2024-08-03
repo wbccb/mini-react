@@ -68,21 +68,6 @@ export function mergeLanes(a: Lanes | Lane, b: Lanes | Lane) {
 	return a | b;
 }
 
-export function markRootUpdated(
-	root: FiberRoot,
-	updateLane: Lane,
-	eventTime: number,
-) {
-	// 包含了当前rootFiber树中所有待处理的update的lane(包含所有childFiber的update)，
-	// 可以根据pendingLanes一定范围的取值去拿到当前优先级最高的lanes，然后赋值给renderLanes，
-	// 后续遍历updateQueue时可以判断当前update是否就是renderLanes的值得到当前优先级最高的update更新对象
-	root.pendingLanes |= updateLane;
-
-	const eventTimes = root.eventTimes;
-	const index = laneToIndex(updateLane);
-	eventTimes[index] = eventTime;
-}
-
 // ============================== 辅助方法 ==============================
 
 // packages/react-reconciler/src/clz32.js
@@ -118,3 +103,28 @@ export function includesNonIdleWork(lanes: Lanes) {
 	return (lanes & NonIdleLanes) !== NoLanes;
 }
 // ============================== 辅助方法 ==============================
+
+export function markRootUpdated(
+	root: FiberRoot,
+	updateLane: Lane,
+	eventTime: number,
+) {
+	// 包含了当前rootFiber树中所有待处理的update的lane(包含所有childFiber的update)，
+	// 可以根据pendingLanes一定范围的取值去拿到当前优先级最高的lanes，然后赋值给renderLanes，
+	// 后续遍历updateQueue时可以判断当前update是否就是renderLanes的值得到当前优先级最高的update更新对象
+	root.pendingLanes |= updateLane;
+
+	const eventTimes = root.eventTimes;
+	const index = laneToIndex(updateLane);
+	eventTimes[index] = eventTime;
+}
+
+export function markStarvedLanesAsExpired() {
+	// 低优先级任务一直被高优先级任务打断，检查低优先级任务是否一直堵塞，强制转化为过期任务提高优先级
+	// 检查root.pendingLanes是否存在lane一直没执行，将它从pendingLanes移动到root.expiredLanes
+	// TODO 并发源码研究彻底后再来完善
+}
+export function getNextLanes(root: FiberRoot, wipLanes: Lanes): Lanes {
+	// TODO 并发源码研究彻底后再来完善
+	return NoLanes;
+}

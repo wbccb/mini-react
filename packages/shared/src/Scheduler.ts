@@ -5,4 +5,6 @@ function scheduleCallback(
 	options?: Record<string, any>,
 ) {}
 
-export { scheduleCallback };
+function cancelCallback(existingCallbackNode: any) {}
+
+export { scheduleCallback, cancelCallback };
