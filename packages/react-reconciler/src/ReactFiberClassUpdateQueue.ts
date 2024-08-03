@@ -1,6 +1,13 @@
 import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
-import { Lane, Lanes, NoLanes } from "./ReactFiberLane.ts";
+import {
+	Lane,
+	Lanes,
+	markRootUpdated,
+	NoLanes,
+	SyncLane,
+} from "./ReactFiberLane.ts";
 import { enqueueConcurrentClassUpdate } from "./ReactFiberConcurrentUpdates.ts";
+import { ensureRootIsScheduled } from "./ReactFiberWorkLoop.ts";
 
 export type State = {};
 export type Update<State> = {
@@ -68,7 +75,20 @@ function scheduleUpdateOnFiber(
 	fiber: Fiber,
 	lane: Lane,
 	eventTime: number,
-) {}
+) {
+	markRootUpdated(root, lane, eventTime);
+	ensureRootIsScheduled(root, eventTime);
+
+	// TODO 后续再实现，我觉得这个部分是有价值的
+	// if (
+	// 	lane === SyncLane &&
+	// 	executionContext === NoContext &&
+	// 	(fiber.mode & ConcurrentMode) === NoMode
+	// ) {
+	// 	resetRenderTimer();
+	// 	flushSyncCallbacksOnlyInLegacyMode();
+	// }
+}
 
 function entangleTransitions(root: FiberRoot, fiber: Fiber, lane: Lane) {
 	// TODO 并发时再实现

@@ -1,7 +1,7 @@
 import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
 import { ConcurrentRoot } from "./ReactRootTags.ts";
 import { createFiberRoot } from "./ReactFiberRoot.ts";
-import type { ReactNodeList } from "shared/ReactTypes";
+import type { ReactNodeList } from "shared";
 import { requestEventTime, requestUpdateLane } from "./ReactFiberWorkLoop.ts";
 import {
 	createUpdate,

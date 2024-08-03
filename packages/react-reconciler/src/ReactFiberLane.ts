@@ -1,3 +1,5 @@
+import { FiberRoot } from "./ReactInternalTypes.ts";
+
 export type Lanes = number;
 export type Lane = number;
 export type LaneMap<T> = Array<T>;
@@ -65,3 +67,54 @@ export function getHighestPriorityLane(lanes: Lanes): Lane {
 export function mergeLanes(a: Lanes | Lane, b: Lanes | Lane) {
 	return a | b;
 }
+
+export function markRootUpdated(
+	root: FiberRoot,
+	updateLane: Lane,
+	eventTime: number,
+) {
+	// 包含了当前rootFiber树中所有待处理的update的lane(包含所有childFiber的update)，
+	// 可以根据pendingLanes一定范围的取值去拿到当前优先级最高的lanes，然后赋值给renderLanes，
+	// 后续遍历updateQueue时可以判断当前update是否就是renderLanes的值得到当前优先级最高的update更新对象
+	root.pendingLanes |= updateLane;
+
+	const eventTimes = root.eventTimes;
+	const index = laneToIndex(updateLane);
+	eventTimes[index] = eventTime;
+}
+
+// ============================== 辅助方法 ==============================
+
+// packages/react-reconciler/src/clz32.js
+export const clz32 = Math.clz32 ? Math.clz32 : clz32Fallback;
+const log = Math.log;
+const LN2 = Math.LN2;
+function clz32Fallback(x: number): number {
+	const asUint = x >>> 0;
+	if (asUint === 0) {
+		return 32;
+	}
+	return (31 - ((log(asUint) / LN2) | 0)) | 0;
+}
+
+function pickArbitraryLaneIndex(lanes: Lanes) {
+	return 31 - clz32(lanes);
+}
+function laneToIndex(lane: Lane) {
+	return pickArbitraryLaneIndex(lane);
+}
+
+export function createLaneMap<T>(initial: T): LaneMap<T> {
+	// Intentionally pushing one by one.
+	// https://v8.dev/blog/elements-kinds#avoid-creating-holes
+	const laneMap = [];
+	for (let i = 0; i < TotalLanes; i++) {
+		laneMap.push(initial);
+	}
+	return laneMap;
+}
+
+export function includesNonIdleWork(lanes: Lanes) {
+	return (lanes & NonIdleLanes) !== NoLanes;
+}
+// ============================== 辅助方法 ==============================

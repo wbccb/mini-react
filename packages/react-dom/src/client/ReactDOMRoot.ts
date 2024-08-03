@@ -2,7 +2,7 @@ import { createContainer, updateContainer } from "react-reconciler";
 // @ts-ignore
 import type { FiberRoot } from "react-reconciler/src/ReactInternalTypes";
 import { listenToAllSupportedEvents } from "../events/DOMPluginEventSystem.ts";
-import { ReactNodeList } from "shared/ReactTypes.ts";
+import { ReactNodeList } from "shared";
 export type RootType = ReactDOMRoot;
 class ReactDOMRoot {
 	private _internalRoot: FiberRoot;

@@ -6,12 +6,11 @@
   "main": "./dist/client.js",
   "types": "./dist/client.d.ts",
   "exports": {
-    "./client": "./dist/client.js",
-    "./package.json": "./package.json"
+    "./client": "./client.ts"
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build --watch",
+    "build": "vite build --watch",
     "preview": "vite preview"
   },
   "dependencies": {

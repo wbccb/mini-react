@@ -8,9 +8,16 @@ import {
 } from "./ReactFiberLane.ts";
 import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
 import { ConcurrentMode, NoMode } from "./ReactTypeOfMode.ts";
-import { getCurrentUpdatePriority } from "./ReactEventPriorities.ts";
-import { getCurrentEventPriority } from "react-dom/client/ReactDOMHostConfig";
-
+import {
+	DefaultEventPriority,
+	getCurrentUpdatePriority,
+	lanesToEventPriority,
+} from "./ReactEventPriorities.ts";
+import { getCurrentEventPriority } from "react-dom/client";
+import {
+	NormalPriority as NormalSchedulerPriority,
+	scheduleCallback,
+} from "shared";
 type ExecutionContext = number;
 
 const NoTimestamp = -1;
@@ -67,4 +74,51 @@ function requestUpdateLane(fiber: Fiber): Lane {
 	return eventLane;
 }
 
-export { NoTimestamp, NoContext, requestEventTime, requestUpdateLane };
+function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
+	var existingCallbackNode = root.callbackNode;
+
+	// 检查`root.pendingLanes`是否存在`lane`一直没执行，将它从`pendingLanes`移动到`root.expiredLanes`
+	markStarvedLanesAsExpired();
+
+	// 得到下一个lanes
+	var nextLanes = getNextLanes(
+		root,
+		root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes,
+	);
+	// 从lanes中拿到优先级最高的lane
+	var newCallbackPriority = getHighestPriorityLane(nextLanes);
+
+	// 取消已经存在的lane
+	if (existingCallbackNode != null) {
+		cancelCallback(existingCallbackNode);
+	}
+
+	let newCallbackNode;
+	let schedulerPriorityLevel;
+	// 从nextLanes的lanes中取出优先级最高的lane，判断属于哪个eventLane
+	// 将eventLane -> 转化为：xxxPriority
+	switch (lanesToEventPriority(nextLanes)) {
+		case DefaultEventPriority:
+			schedulerPriorityLevel = NormalSchedulerPriority;
+			break;
+		default:
+			schedulerPriorityLevel = NormalSchedulerPriority;
+			break;
+	}
+	newCallbackNode = scheduleCallback(
+		schedulerPriorityLevel,
+		performConcurrentWorkOnRoot.bind(null, root),
+	);
+	root.callbackPriority = newCallbackPriority;
+	root.callbackNode = newCallbackNode;
+}
+
+function performConcurrentWorkOnRoot(root: FiberRoot, didTimeout?: boolean) {}
+
+export {
+	NoTimestamp,
+	NoContext,
+	requestEventTime,
+	requestUpdateLane,
+	ensureRootIsScheduled,
+};

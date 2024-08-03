@@ -15,7 +15,7 @@ export default defineConfig({
 	resolve: { alias: { src: resolve("src/") } },
 	plugins: [
 		dts({
-			include: ["./src/**/*"],
+			include: ["./src/**/*", "client.ts"],
 			copyDtsFiles: true,
 		}),
 	],
