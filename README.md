@@ -13,9 +13,9 @@
 - `packages`是手写代码存放的目录
 - `examples`是手写代码使用的示例
 
+## docs内容概述
 
-
-## React基础
+### React基础
 
 - [React18使用详解](https://github.com/wbccb/mini-react/blob/main/docs/0-基础知识/React18使用详解.md)
 - [React如何使用css](https://github.com/wbccb/mini-react/blob/main/docs/0-基础知识/React如何使用css.md)
@@ -23,12 +23,7 @@
 - [Redux状态管理多种模式](https://github.com/wbccb/mini-react/blob/main/docs/0-基础知识/Redux状态管理多种模式.md)
 - [SSR&CSR](https://github.com/wbccb/mini-react/blob/main/docs/0-基础知识/SSR&CSR.md)
 
-
-## React源码解析
-
 ### 前置知识 & 原理初探
-
-### 源码解析
 
 
 ## React手写
@@ -37,7 +32,18 @@
 - 根据源码解析 => 构建更加完善的`mini-react`代码
 - 根据更加完善的`mini-react`代码完善源码解析的流程图和源码分析流程
 
+### 难点分析
 
+- [Scheduler实现思路.md](https://github.com/wbccb/mini-react/blob/main/docs/2-手写代码/Scheduler实现思路.md)
+
+### 手写代码
+
+- `react-dom`
+- `react-reconciler`
+- `shared`
+
+
+## 源码解析
 
 
 
