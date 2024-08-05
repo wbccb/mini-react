@@ -125,6 +125,6 @@ export function markStarvedLanesAsExpired() {
 	// TODO 并发源码研究彻底后再来完善
 }
 export function getNextLanes(root: FiberRoot, wipLanes: Lanes): Lanes {
-	// TODO 并发源码研究彻底后再来完善
+	// TODO 比较复杂，后续完善
 	return NoLanes;
 }

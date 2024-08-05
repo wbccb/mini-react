@@ -3,7 +3,7 @@ import { Lane, NoLane } from "react-reconciler";
 type Heap = Array<Node>;
 interface Task {
 	id: number;
-	callback: (params: any) => any;
+	callback: (params: any) => any | null;
 	priorityLevel: Lane;
 	startTime: number;
 	expirationTime: number;
@@ -35,9 +35,9 @@ class MinHeap {
 		this.shiftUp(this.size);
 	}
 
-	pop(): Node | undefined {
+	pop(): Node | null {
 		if (this.size <= 0) {
-			return undefined;
+			return null;
 		}
 		if (this.size === 1) {
 			this.size = 0;
@@ -46,12 +46,18 @@ class MinHeap {
 		this.array[1] = this.array[this.size];
 		this.size--;
 		this.shiftDown(1);
+		return this.array[1];
 	}
 
-	peek(): Node | undefined {
+	peek(): Node | null {
 		if (this.size > 0) {
 			return this.array[1];
 		}
+		return null;
+	}
+
+	isEmpty() {
+		return this.size === 0;
 	}
 
 	shiftUp(index: number) {
