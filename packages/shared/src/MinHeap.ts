@@ -3,7 +3,7 @@ import { Lane, NoLane } from "react-reconciler";
 type Heap = Array<Node>;
 interface Task {
 	id: number;
-	callback: (params: any) => any | null;
+	callback: (() => any) | null;
 	priorityLevel: Lane;
 	startTime: number;
 	expirationTime: number;

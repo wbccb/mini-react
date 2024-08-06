@@ -34,6 +34,9 @@ let taskIdCounter = 1; // taskId，不断进行递增
 let isHostCallbackScheduled = false; // 防止多次触发: requestHostCallback(flushWork)
 let isMessageLoopRunning = false; // 防止多次触发: MessageChannel的message.post(null)
 let isPerformingWork = false; // 防止多次触发: flushWork(),本质就是workLoop()
+let taskTimeoutID = -1;
+
+let isHostTimeoutScheduled = false; // 倒计时timerQueue的task任务
 
 let timerQueue = new MinHeap();
 let taskQueue = new MinHeap();
@@ -94,15 +97,20 @@ function scheduleCallback(
 	}
 
 	if (taskQueue.isEmpty()) {
-		// 如果taskQueue为空，则进行timerQueue的倒计时
-		requestHostTimeout();
+		// 如果taskQueue为空，则进行timerQueue的倒计时，此时的taskk
+		if (newTask === timerQueue.peek()) {
+			if (isHostTimeoutScheduled) {
+				cancelHostTimeout();
+			} else {
+				isHostTimeoutScheduled = true;
+			}
+			requestHostTimeout(handleTimeout, startTime - currentTime);
+		}
 	} else {
 		// 如果taskQueue不为空，则进行requestHostCallback()宏任务的调度
 		requestHostCallback(flushWork);
 	}
 }
-
-function requestHostTimeout() {}
 
 let scheduledHostCallback: () => boolean;
 function requestHostCallback(flushWork: () => boolean) {
@@ -125,6 +133,7 @@ function performWorkUntilDeadline() {
 	// 宏任务触发这里执行
 	isMessageLoopRunning = false;
 
+	// scheduledHostCallback=flushWork
 	const hasMoreWork = scheduledHostCallback();
 	if (hasMoreWork) {
 		schedulePerformWorkUtilDeadLine();
@@ -176,7 +185,10 @@ function workLoop(): boolean {
 		return true;
 	} else {
 		// 进行倒计时，因为taskQueue已经为空
-		requestHostTimeout();
+		if (!timerQueue.isEmpty()) {
+			const timerTask = timerQueue.peek()!;
+			requestHostTimeout(handleTimeout, timerTask?.startTime - currentTime);
+		}
 		return false;
 	}
 }
@@ -204,6 +216,38 @@ function advanceTimers(currentTime: number) {
 	}
 }
 
-function cancelCallback(existingCallbackNode: any) {}
+function requestHostTimeout(
+	callback: (currentTime: number) => void,
+	ms: number,
+) {
+	taskTimeoutID = setTimeout(() => {
+		const currentTime = getCurrentTime();
+		callback(currentTime);
+	}, ms);
+}
+
+function handleTimeout(currentTime: number) {
+	// 检测timerQueue->taskQueue
+	advanceTimers(currentTime);
+	if (!taskQueue.isEmpty()) {
+		// 如果目前taskQueue有task，触发requestHostCallback进行新一轮宏任务的调度
+		requestHostCallback(flushWork);
+	} else {
+		// 如果没有taskQueue! 则继续倒计时（因为你已经检测过timerQueue->taskQueue了）是真的没task干了
+		if (!timerQueue.isEmpty()) {
+			const firstTask = timerQueue.peek()!;
+			requestHostTimeout(handleTimeout, firstTask.startTime - currentTime);
+		}
+	}
+}
+
+function cancelHostTimeout() {
+	clearTimeout(taskTimeoutID);
+	taskTimeoutID = -1;
+}
+
+function cancelCallback(existingCallbackNode: Task) {
+	existingCallbackNode.callback = null;
+}
 
 export { scheduleCallback, cancelCallback };
