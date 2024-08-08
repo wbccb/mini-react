@@ -23,6 +23,11 @@ class FiberRootNode {
 	callbackNode: any;
 	callbackPriority: Lane;
 
+	expiredLanes: Lanes; // 如果有lane已经过期，则放在lanes上
+
+	finishedWork: Fiber | null;
+	finishedLanes: Lanes;
+
 	constructor(containerInfo: any, tag: RootTag) {
 		this.containerInfo = containerInfo;
 		this.tag = tag;
@@ -33,6 +38,11 @@ class FiberRootNode {
 
 		this.callbackNode = null;
 		this.callbackPriority = NoLane;
+
+		this.expiredLanes = NoLanes;
+
+		this.finishedWork = null;
+		this.finishedLanes = NoLanes;
 	}
 }
 

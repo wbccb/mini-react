@@ -91,6 +91,9 @@ importers:
 
   packages/react-reconciler:
     dependencies:
+      react-dom:
+        specifier: workspace:*
+        version: link:../react-dom
       shared:
         specifier: workspace:*
         version: link:../shared

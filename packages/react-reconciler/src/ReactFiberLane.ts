@@ -68,6 +68,19 @@ export function mergeLanes(a: Lanes | Lane, b: Lanes | Lane) {
 	return a | b;
 }
 
+export function includesBlockingLane(root: FiberRoot, lanes: Lanes) {
+	const SyncDefaultLanes =
+		InputContinuousHydrationLane |
+		InputContinuousLane |
+		DefaultHydrationLane |
+		DefaultLane;
+	return (lanes & SyncDefaultLanes) !== NoLanes;
+}
+
+export function includesExpiredLane(root: FiberRoot, lanes: Lanes) {
+	return (lanes & root.expiredLanes) !== NoLanes;
+}
+
 // ============================== 辅助方法 ==============================
 
 // packages/react-reconciler/src/clz32.js

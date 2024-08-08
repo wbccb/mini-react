@@ -116,6 +116,8 @@ function scheduleCallback(
 			requestHostCallback(flushWork);
 		}
 	}
+
+	return newTask;
 }
 
 let scheduledHostCallback: ((currentTime: number) => boolean) | null = null;

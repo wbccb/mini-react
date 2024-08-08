@@ -8,6 +8,8 @@ import {
 	markStarvedLanesAsExpired,
 	getNextLanes,
 	getHighestPriorityLane,
+	includesBlockingLane,
+	includesExpiredLane,
 } from "./ReactFiberLane.ts";
 import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
 import { ConcurrentMode, NoMode } from "./ReactTypeOfMode.ts";
@@ -32,6 +34,16 @@ const NoContext = /*             */ 0b000;
 const BatchedContext = /*               */ 0b001;
 const RenderContext = /*                */ 0b010;
 const CommitContext = /*                */ 0b100;
+
+// 代表着渲染结束时的状态：是正常还是异常还是中断！
+type RootExitStatus = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+const RootInProgress = 0;
+const RootFatalErrored = 1;
+const RootErrored = 2;
+const RootSuspended = 3;
+const RootSuspendedWithDelay = 4;
+const RootCompleted = 5;
+const RootDidNotComplete = 6;
 
 let executionContext: ExecutionContext = NoContext;
 let workInProgressRoot: FiberRoot | null = null;
@@ -117,7 +129,80 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
 	root.callbackNode = newCallbackNode;
 }
 
-function performConcurrentWorkOnRoot(root: FiberRoot, didTimeout?: boolean) {}
+function performConcurrentWorkOnRoot(root: FiberRoot, didTimeout?: boolean) {
+	// 省略很多lanes===NoLanes或者xxx===null的判断，因为这些判断会让mini-react项目很臃肿
+
+	const originalCallbackNode = root.callbackNode;
+
+	const lanes = getNextLanes(
+		root,
+		root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes,
+	);
+
+	// const didUserCallbackTimeout = currentTask.expirationTime <= currentTime;
+	// const continueCallback = callback(didUserCallbackTimeout);
+	// 如果当前task已经过期（didTimeout等于true)，那么shouldTImeSlice=false，代表task必须马上执行，不能使用时间切片了！！！必须同步！马上！now！
+	// 当然如果lanes包含了过期的lane 或者 包含了同步lane，那么shouldTImeSlice=false，必须马上执行，不能使用时间切片
+	const shouldTImeSlice =
+		!includesBlockingLane(root, lanes) &&
+		!includesExpiredLane(root, lanes) &&
+		!didTimeout;
+
+	let exitStatus;
+	// render阶段
+	if (shouldTImeSlice) {
+		exitStatus = renderRootConcurrent(root, lanes);
+	} else {
+		exitStatus = renderRootSync(root, lanes);
+	}
+
+	if (exitStatus !== RootInProgress) {
+		// 检测是否可能还没render完毕
+
+		const renderWasConcurrent = !includesBlockingLane(root, lanes);
+		const finishedWork = root.current?.alternate!;
+		if (
+			renderWasConcurrent &&
+			!isRenderConsistentWithExternalStores(finishedWork)
+		) {
+			// TODO 还不是很理解这个场景，后续再完善
+		}
+
+		// commit阶段
+		root.finishedWork = finishedWork;
+		root.finishedLanes = lanes;
+		finishConcurrentRender(root, exitStatus, lanes);
+	}
+
+	ensureRootIsScheduled(root, now());
+
+	if (root.callbackNode === originalCallbackNode) {
+		// TODO 还不是很理解这个场景，后续再完善
+		// 这里的callback()要返回什么值？
+		// 为什么跟hasWork()有关？？
+		// 在Scheduler.ts中callback(didUserCallbackTimeout)返回一个function
+		// 这个function继续放在task.callback中
+		// 这里的root.callbackNode本质就是FiberRoot.task属性还是原来的那个task
+		// 在上面ensureRootIsScheduled()会调用newCallbackNode=scheduleCallback()
+		// 然后设置root.callbackNode = newCallbackNode
+	}
+
+	return null;
+}
+
+function renderRootConcurrent(root: FiberRoot, lanes: Lanes): RootExitStatus {}
+function renderRootSync(root: FiberRoot, lanes: Lanes): RootExitStatus {}
+
+function finishConcurrentRender(
+	root: FiberRoot,
+	exitStatus: RootExitStatus,
+	lanes: Lanes,
+) {}
+
+function isRenderConsistentWithExternalStores(finishedWork: Fiber): boolean {
+	// TODO 还不是很理解，后续再完善
+	return false;
+}
 
 export {
 	NoTimestamp,

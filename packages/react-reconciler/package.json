@@ -15,7 +15,8 @@
     "tsc": "tsc"
   },
   "dependencies": {
-    "shared": "workspace:*"
+    "shared": "workspace:*",
+    "react-dom": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.2.2",
