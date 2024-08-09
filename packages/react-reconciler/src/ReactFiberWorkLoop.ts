@@ -26,6 +26,7 @@ import {
 } from "shared";
 import { createFiber } from "./ReactFiber.ts";
 import { StaticMask } from "./ReactFiberFlags.ts";
+import { finishQueueingConcurrentUpdates } from "./ReactFiberConcurrentUpdates.ts";
 type ExecutionContext = number;
 
 const NoTimestamp = -1;
@@ -260,8 +261,6 @@ function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
 	workInProgress.sibling = current.sibling;
 	return workInProgress;
 }
-
-function finishQueueingConcurrentUpdates() {}
 
 function workLoopSync() {
 	while (workInProgress !== null) {
