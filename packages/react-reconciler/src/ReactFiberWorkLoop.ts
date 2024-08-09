@@ -27,6 +27,7 @@ import {
 import { createFiber } from "./ReactFiber.ts";
 import { StaticMask } from "./ReactFiberFlags.ts";
 import { finishQueueingConcurrentUpdates } from "./ReactFiberConcurrentUpdates.ts";
+import { beginWork } from "./ReactFiberBeginWork.ts";
 type ExecutionContext = number;
 
 const NoTimestamp = -1;
