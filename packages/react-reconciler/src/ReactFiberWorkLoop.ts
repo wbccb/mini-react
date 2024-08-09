@@ -28,6 +28,7 @@ import { createFiber } from "./ReactFiber.ts";
 import { StaticMask } from "./ReactFiberFlags.ts";
 import { finishQueueingConcurrentUpdates } from "./ReactFiberConcurrentUpdates.ts";
 import { beginWork } from "./ReactFiberBeginWork.ts";
+import { completeWork } from "./ReactFiberCompleteWork.ts";
 type ExecutionContext = number;
 
 const NoTimestamp = -1;
@@ -289,6 +290,32 @@ function completeUnitOfWork(unitOfWork: Fiber) {
 	// 1. 如果unitOfWork有sibling，则return sibling，因为sibling可能beginWork()继续深度遍历子节点，继续beginWork()
 	// 2. 如果unitOfWork没有sibling，则不断向上冒泡调用completeWork()
 	// 3. 一般completeWork()只会返回null，如果返回不是null，说明这个fiber产生了新的work，需要继续对这个fiber进行beginWork()
+
+	let completedWork: Fiber | null = unitOfWork;
+	do {
+		const current: Fiber | null = completedWork.alternate;
+		const returnFiber: Fiber | null = completedWork.return;
+
+		let next = completeWork(current, completedWork, subtreeRenderLanes);
+		if (next !== null) {
+			// 3.一般completeWork()只会返回null，如果返回不是null，说明这个fiber产生了新的work，需要继续对这个fiber进行beginWork()
+			workInProgress = next;
+			return;
+		}
+
+		if (unitOfWork.sibling) {
+			workInProgress = unitOfWork.sibling;
+			return;
+		}
+
+		completedWork = returnFiber;
+		workInProgress = completedWork;
+	} while (completedWork !== null);
+
+	if (workInProgressRootExitStatus === RootInProgress) {
+		// 我们已经到达root fiber
+		workInProgressRootExitStatus = RootCompleted;
+	}
 }
 
 function finishConcurrentRender(
