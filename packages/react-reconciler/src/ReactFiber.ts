@@ -13,12 +13,12 @@ export function createHostRootFiber(tag: RootTag) {
 		mode = NoMode;
 	}
 	// tag => 决定mode的数据
-	return createFiber(HostRoot, mode);
+	return createFiber(HostRoot, null, mode);
 }
 
-function createFiber(tag: WorkTag, mode: TypeOfMode) {
+function createFiber(tag: WorkTag, pendingProps: any, mode: TypeOfMode) {
 	// 这里的tag跟createHostRootFiber的tag是不同类型的！
-	return new FiberNode(tag, mode);
+	return new FiberNode(tag, pendingProps, mode);
 }
 
 class FiberNode {
@@ -37,7 +37,10 @@ class FiberNode {
 
 	flags: Flags;
 
-	constructor(tag: WorkTag, mode: TypeOfMode) {
+	memoizedProps: any; // 上一次使用的旧的props
+	pendingProps: any; // 新的props
+
+	constructor(tag: WorkTag, pendingProps: any, mode: TypeOfMode) {
 		this.tag = tag;
 		this.mode = mode;
 
@@ -58,6 +61,9 @@ class FiberNode {
 		this.sibling = null;
 
 		this.flags = NoFlags;
+
+		this.memoizedProps = null;
+		this.pendingProps = pendingProps;
 	}
 }
 

@@ -242,7 +242,7 @@ function prepareFreshStack(root: FiberRoot, lanes: Lanes) {
 function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
 	let workInProgress = current.alternate;
 	if (workInProgress === null) {
-		workInProgress = createFiber(current.tag, current.mode);
+		workInProgress = createFiber(current.tag, pendingProps, current.mode);
 		workInProgress.stateNode = current.stateNode;
 
 		workInProgress.alternate = current; // workInProgress和current相关邦定
@@ -269,7 +269,26 @@ function workLoopSync() {
 	}
 }
 
-function performUnitOfWork(unitOfWork: Fiber) {}
+function performUnitOfWork(unitOfWork: Fiber) {
+	let current = unitOfWork.alternate;
+	let next = beginWork(current, unitOfWork, subtreeRenderLanes);
+
+	unitOfWork.memoizedProps = unitOfWork.pendingProps;
+
+	if (next === null) {
+		// 说明没有子节点，进行completeWork()处理
+		// 在completeUnitOfWork()会将根据unitOfWork去给workInProgress赋值
+		completeUnitOfWork(unitOfWork);
+	} else {
+		workInProgress = next;
+	}
+}
+
+function completeUnitOfWork(unitOfWork: Fiber) {
+	// 1. 如果unitOfWork有sibling，则return sibling，因为sibling可能beginWork()继续深度遍历子节点，继续beginWork()
+	// 2. 如果unitOfWork没有sibling，则不断向上冒泡调用completeWork()
+	// 3. 一般completeWork()只会返回null，如果返回不是null，说明这个fiber产生了新的work，需要继续对这个fiber进行beginWork()
+}
 
 function finishConcurrentRender(
 	root: FiberRoot,
