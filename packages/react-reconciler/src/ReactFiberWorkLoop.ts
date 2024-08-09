@@ -24,6 +24,8 @@ import {
 	scheduleCallback,
 	cancelCallback,
 } from "shared";
+import { createFiber } from "./ReactFiber.ts";
+import { StaticMask } from "./ReactFiberFlags.ts";
 type ExecutionContext = number;
 
 const NoTimestamp = -1;
@@ -49,6 +51,10 @@ let executionContext: ExecutionContext = NoContext;
 let workInProgressRoot: FiberRoot | null = null;
 let workInProgress: Fiber | null = null;
 let workInProgressRootRenderLanes: Lanes = NoLanes;
+
+let workInProgressRootExitStatus: RootExitStatus = RootInProgress;
+let subtreeRenderLanes: Lanes = NoLanes;
+let workInProgressRootIncludedLanes: Lanes = NoLanes;
 
 function now() {
 	return window.performance.now();
@@ -190,8 +196,81 @@ function performConcurrentWorkOnRoot(root: FiberRoot, didTimeout?: boolean) {
 	return null;
 }
 
-function renderRootConcurrent(root: FiberRoot, lanes: Lanes): RootExitStatus {}
-function renderRootSync(root: FiberRoot, lanes: Lanes): RootExitStatus {}
+function renderRootConcurrent(root: FiberRoot, lanes: Lanes): RootExitStatus {
+	return RootCompleted;
+}
+function renderRootSync(root: FiberRoot, lanes: Lanes): RootExitStatus {
+	const prevExecutionContext = executionContext;
+	executionContext |= RenderContext;
+
+	// 初始化时workInProgressRoot为null，workInProgressRootRenderLanes
+	if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
+		prepareFreshStack(root, lanes);
+	}
+
+	// 核心执行方法
+	workLoopSync();
+
+	executionContext = prevExecutionContext;
+	workInProgressRoot = null;
+	workInProgressRootRenderLanes = NoLanes;
+
+	// workInProgressRootExitStatus的值会在各个方法中修改，比如prepareFreshStack()中改为：
+	// workInProgressRootExitStatus = RootInProgress
+	return workInProgressRootExitStatus;
+}
+
+function prepareFreshStack(root: FiberRoot, lanes: Lanes) {
+	// 创建根fiber的复制品！！
+
+	root.finishedWork = null;
+	root.finishedLanes = NoLanes;
+
+	workInProgressRoot = root;
+	const rootWorkInProgress = createWorkInProgress(root.current!, null);
+	workInProgress = rootWorkInProgress;
+	workInProgressRootIncludedLanes = lanes;
+	subtreeRenderLanes = lanes;
+	workInProgressRootRenderLanes = lanes;
+	workInProgressRootExitStatus = RootInProgress;
+
+	finishQueueingConcurrentUpdates();
+	return rootWorkInProgress;
+}
+
+function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
+	let workInProgress = current.alternate;
+	if (workInProgress === null) {
+		workInProgress = createFiber(current.tag, current.mode);
+		workInProgress.stateNode = current.stateNode;
+
+		workInProgress.alternate = current; // workInProgress和current相关邦定
+		current.alternate = workInProgress;
+	}
+
+	// TODO 为什么要 & StaticMask?
+	workInProgress.flags = current.flags & StaticMask;
+	workInProgress.childLanes = current.childLanes;
+	workInProgress.lanes = current.lanes;
+
+	workInProgress.child = current.child;
+	workInProgress.memoizedState = current.memoizedState;
+	workInProgress.updateQueue = current.updateQueue;
+
+	workInProgress.sibling = current.sibling;
+	return workInProgress;
+}
+
+function finishQueueingConcurrentUpdates() {}
+
+function workLoopSync() {
+	while (workInProgress !== null) {
+		// 1个fiber=1个单元，workLoopSync会执行一个work=多个单元=多个fiber
+		performUnitOfWork(workInProgress);
+	}
+}
+
+function performUnitOfWork(unitOfWork: Fiber) {}
 
 function finishConcurrentRender(
 	root: FiberRoot,

@@ -3,6 +3,7 @@ import { HostRoot, WorkTag } from "./ReactWorkTags.ts";
 import { State, UpdateQueue } from "./ReactFiberClassUpdateQueue.ts";
 import { ConcurrentMode, NoMode, TypeOfMode } from "./ReactTypeOfMode.ts";
 import { Lanes, NoLanes } from "./ReactFiberLane.ts";
+import { Flags, NoFlags } from "./ReactFiberFlags.ts";
 
 export function createHostRootFiber(tag: RootTag) {
 	let mode;
@@ -34,6 +35,8 @@ class FiberNode {
 	child: FiberNode | null;
 	sibling: FiberNode | null;
 
+	flags: Flags;
+
 	constructor(tag: WorkTag, mode: TypeOfMode) {
 		this.tag = tag;
 		this.mode = mode;
@@ -53,7 +56,9 @@ class FiberNode {
 		this.return = null;
 		this.child = null;
 		this.sibling = null;
+
+		this.flags = NoFlags;
 	}
 }
 
-export { FiberNode };
+export { FiberNode, createFiber };
