@@ -1,11 +1,24 @@
 import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
 import { Lanes } from "./ReactFiberLane.ts";
-import { BeforeMutationMask, LayoutMask, NoFlags } from "./ReactFiberFlags.ts";
+import { BeforeMutationMask, LayoutMask, NoFlags, Snapshot } from "./ReactFiberFlags.ts";
 import { HostComponent, HostRoot, HostText } from "./ReactWorkTags.ts";
 let nextEffect: Fiber | null = null;
 
-function commitBeforeMutationEffectsOnFiber(fiber: Fiber) {
+function commitBeforeMutationEffectsOnFiber(finishedWork: Fiber) {
 	// before Mutation真正执行地方
+	const flags = finishedWork.flags;
+	if ((flags & Snapshot) === NoFlags) {
+		return;
+	}
+
+	switch (finishedWork.tag) {
+		case HostComponent:
+			break;
+		case HostRoot:
+			const root = finishedWork.stateNode;
+			root.textContent = "";
+			break;
+	}
 }
 function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 	// MutationEffects真正执行地方
