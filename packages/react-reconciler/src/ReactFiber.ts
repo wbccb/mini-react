@@ -24,33 +24,17 @@ export function createHostRootFiber(tag: RootTag) {
 	return createFiber(HostRoot, null, null, mode);
 }
 
-function createFiber(
-	tag: WorkTag,
-	pendingProps: any,
-	key: null | string,
-	mode: TypeOfMode,
-) {
+function createFiber(tag: WorkTag, pendingProps: any, key: null | string, mode: TypeOfMode) {
 	// 这里的tag跟createHostRootFiber的tag是不同类型的！
 	return new FiberNode(tag, pendingProps, key, mode);
 }
 
-function createFiberFromElement(
-	element: ReactElement,
-	mode: TypeOfMode,
-	lanes: Lanes,
-) {
+function createFiberFromElement(element: ReactElement, mode: TypeOfMode, lanes: Lanes) {
 	const type = element.type;
 	const key = element.key;
 	const pendingProps = element.props;
 
-	const fiber = createFiberFromTypeAndProps(
-		type,
-		key,
-		pendingProps,
-		element._owner,
-		mode,
-		lanes,
-	);
+	const fiber = createFiberFromTypeAndProps(type, key, pendingProps, element._owner, mode, lanes);
 
 	return fiber;
 }
@@ -102,16 +86,12 @@ class FiberNode {
 	sibling: FiberNode | null;
 
 	flags: Flags;
+	subTreeFlags: Flags;
 
 	memoizedProps: any; // 上一次使用的旧的props
 	pendingProps: any; // 新的props
 
-	constructor(
-		tag: WorkTag,
-		pendingProps: any,
-		key: string | null,
-		mode: TypeOfMode,
-	) {
+	constructor(tag: WorkTag, pendingProps: any, key: string | null, mode: TypeOfMode) {
 		this.tag = tag;
 		this.mode = mode;
 		this.elementType = null;
@@ -135,6 +115,7 @@ class FiberNode {
 		this.sibling = null;
 
 		this.flags = NoFlags;
+		this.subTreeFlags = NoFlags;
 
 		this.memoizedProps = null;
 		this.pendingProps = pendingProps;
