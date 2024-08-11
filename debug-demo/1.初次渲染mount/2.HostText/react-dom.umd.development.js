@@ -11757,6 +11757,7 @@
 			newChildren,
 			lanes,
 		) {
+			debugger;
 			var resultingFirstChild = null;
 			var previousNewFiber = null;
 			var oldFiber = currentFirstChild;
@@ -12092,6 +12093,7 @@
 			textContent,
 			lanes,
 		) {
+			debugger;
 			// There's no need to check for keys on text nodes since we don't have a
 			// way to define them.
 			if (currentFirstChild !== null && currentFirstChild.tag === HostText) {
@@ -17507,6 +17509,7 @@
 			typeof value.render === "function" &&
 			value.$$typeof === undefined
 		) {
+			debugger;
 			workInProgress.tag = ClassComponent; // Throw out any hooks that were used.
 
 			workInProgress.memoizedState = null;
@@ -19051,6 +19054,7 @@
 			}
 
 			case ClassComponent: {
+				debugger;
 				var _Component = workInProgress.type;
 				var _unresolvedProps = workInProgress.pendingProps;
 
@@ -19624,21 +19628,23 @@
 
 			case HostRoot: {
 				var fiberRoot = workInProgress.stateNode;
-				var previousCache = null;
 
-				if (current !== null) {
-					previousCache = current.memoizedState.cache;
+				{
+					var previousCache = null;
+
+					if (current !== null) {
+						previousCache = current.memoizedState.cache;
+					}
+
+					var cache = workInProgress.memoizedState.cache;
+
+					if (cache !== previousCache) {
+						// Run passive effects to retain/release the cache.
+						workInProgress.flags |= Passive;
+					}
+
+					popCacheProvider();
 				}
-
-				var cache = workInProgress.memoizedState.cache;
-
-				if (cache !== previousCache) {
-					// Run passive effects to retain/release the cache.
-					workInProgress.flags |= Passive;
-				}
-
-				popCacheProvider();
-
 				popHostContainer();
 				popTopLevelContextObject();
 				resetWorkInProgressVersions();
@@ -20639,7 +20645,6 @@
 	}
 
 	function commitBeforeMutationEffects_begin() {
-		debugger;
 		while (nextEffect !== null) {
 			var fiber = nextEffect; // This phase is only used for beforeActiveInstanceBlur.
 
@@ -20679,7 +20684,6 @@
 	}
 
 	function commitBeforeMutationEffectsOnFiber(finishedWork) {
-		debugger;
 		var current = finishedWork.alternate;
 		var flags = finishedWork.flags;
 
@@ -20797,11 +20801,14 @@
 					var create = effect.create;
 
 					effect.destroy = create();
+					debugger;
 
-					if ((flags & Passive$1) !== NoFlags$1) {
-						markComponentPassiveEffectMountStopped();
-					} else if ((flags & Layout) !== NoFlags$1) {
-						markComponentLayoutEffectMountStopped();
+					{
+						if ((flags & Passive$1) !== NoFlags$1) {
+							markComponentPassiveEffectMountStopped();
+						} else if ((flags & Layout) !== NoFlags$1) {
+							markComponentLayoutEffectMountStopped();
+						}
 					}
 				}
 
@@ -21920,7 +21927,6 @@
 		// because the fiber tag is more specific. An exception is any flag related
 		// to reconcilation, because those can be set on all fiber types.
 
-		debugger;
 		switch (finishedWork.tag) {
 			case FunctionComponent:
 			case ForwardRef:
@@ -22241,7 +22247,6 @@
 	}
 
 	function commitReconciliationEffects(finishedWork) {
-		debugger;
 		// Placement effects (insertions, reorders) can be scheduled on any fiber
 		// type. They needs to happen after the children effects have fired, but
 		// before the effects on this fiber have fired.
@@ -22278,7 +22283,6 @@
 		// Suspense layout effects semantics don't change for legacy roots.
 		var isModernRoot = (subtreeRoot.mode & ConcurrentMode) !== NoMode;
 
-		debugger;
 		while (nextEffect !== null) {
 			var fiber = nextEffect;
 			var firstChild = fiber.child;
@@ -24441,7 +24445,6 @@
 		transitions,
 		renderPriorityLevel,
 	) {
-		debugger;
 		console.info("commit阶段", root);
 
 		do {
@@ -24461,10 +24464,14 @@
 		var finishedWork = root.finishedWork;
 		var lanes = root.finishedLanes;
 
-		markCommitStarted(lanes);
+		{
+			markCommitStarted(lanes);
+		}
 
 		if (finishedWork === null) {
-			markCommitStopped();
+			{
+				markCommitStopped();
+			}
 
 			return null;
 		}
@@ -24564,9 +24571,11 @@
 				finishedWork,
 			);
 
-			// Mark the current commit time to be shared by all Profilers in this
-			// batch. This enables them to be grouped later.
-			recordCommitTime();
+			{
+				// Mark the current commit time to be shared by all Profilers in this
+				// batch. This enables them to be grouped later.
+				recordCommitTime();
+			}
 
 			commitMutationEffects(root, finishedWork, lanes);
 
@@ -24577,12 +24586,15 @@
 
 			root.current = finishedWork; // The next phase is the layout phase, where we call effects that read
 
-			markLayoutEffectsStarted(lanes);
+			{
+				markLayoutEffectsStarted(lanes);
+			}
 
 			commitLayoutEffects(finishedWork, root, lanes);
 
-			markLayoutEffectsStopped();
-
+			{
+				markLayoutEffectsStopped();
+			}
 			// opportunity to paint.
 
 			requestPaint();
@@ -24596,7 +24608,9 @@
 			// no effects.
 			// TODO: Maybe there's a better way to report this.
 
-			recordCommitTime();
+			{
+				recordCommitTime();
+			}
 		}
 
 		if (rootDoesHavePassiveEffects) {
@@ -24630,10 +24644,11 @@
 
 		onCommitRoot(finishedWork.stateNode, renderPriorityLevel);
 
-		if (isDevToolsPresent) {
-			root.memoizedUpdaters.clear();
+		{
+			if (isDevToolsPresent) {
+				root.memoizedUpdaters.clear();
+			}
 		}
-
 		// additional work on this root is scheduled.
 
 		ensureRootIsScheduled(root, now());
@@ -24695,7 +24710,9 @@
 
 		flushSyncCallbacks();
 
-		markCommitStopped();
+		{
+			markCommitStopped();
+		}
 
 		return null;
 	}
@@ -25210,8 +25227,6 @@
 
 			workInProgress.alternate = current;
 			current.alternate = workInProgress;
-
-			workInProgress.testMode = "root复制品fiber";
 		} else {
 			workInProgress.pendingProps = pendingProps; // Needed because Blocks store data on type.
 

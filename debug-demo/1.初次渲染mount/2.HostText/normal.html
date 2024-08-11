@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+<div id="root"></div>
+</body>
+
+<script src='react.umd.development.js'></script>
+<script src='react-dom.umd.development.js'></script>
+<script src="babel.js"></script>
+<script type="text/babel">
+    const domNode = document.getElementById('root');
+    const root = ReactDOM.createRoot(domNode);
+    root.render("我是根节点的文本");
+    // root.render(
+    //     <div id="parent">
+    //         <span>我是Child1</span>
+    //         <p>我是Child2</p>
+    //         Child3
+    //     </div>
+    // );
+</script>
+</html>
