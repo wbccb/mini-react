@@ -1,7 +1,16 @@
 import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
 import { Lanes } from "./ReactFiberLane.ts";
-import { BeforeMutationMask, LayoutMask, NoFlags, Snapshot } from "./ReactFiberFlags.ts";
-import { HostComponent, HostRoot, HostText } from "./ReactWorkTags.ts";
+import {
+	BeforeMutationMask,
+	Hydrating,
+	LayoutMask,
+	MutationMask,
+	NoFlags,
+	Placement,
+	Snapshot,
+	Update,
+} from "./ReactFiberFlags.ts";
+import { HostComponent, HostPortal, HostRoot, HostText } from "./ReactWorkTags.ts";
 let nextEffect: Fiber | null = null;
 
 function commitBeforeMutationEffectsOnFiber(finishedWork: Fiber) {
@@ -22,10 +31,15 @@ function commitBeforeMutationEffectsOnFiber(finishedWork: Fiber) {
 }
 function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 	// MutationEffects真正执行地方
-
+	const flags = finishedWork.flags;
 	switch (finishedWork.tag) {
-		case HostComponent:
 		case HostRoot:
+			recursivelyTraverseMutationEffects(root, finishedWork);
+			commitReconciliationEffects(finishedWork);
+			if (flags & Update) {
+				// TODO 渲染更新再完善
+			}
+			return;
 	}
 }
 function commitLayoutEffectOnFiber(
@@ -35,6 +49,82 @@ function commitLayoutEffectOnFiber(
 	committedLanes: Lanes,
 ) {
 	// LayoutEffects真正执行地方
+}
+
+function recursivelyTraverseMutationEffects(root: FiberRoot, parentFiber: Fiber) {
+	var deletions = parentFiber.deletions;
+	if (deletions !== null) {
+		for (var i = 0; i < deletions.length; i++) {
+			var childToDelete = deletions[i];
+			commitDeletionEffects(root, parentFiber, childToDelete);
+		}
+	}
+
+	if (parentFiber.subtreeFlags & MutationMask) {
+		let child = parentFiber.child;
+
+		while (child !== null) {
+			commitMutationEffectsOnFiber(child, root);
+			child = child.sibling;
+		}
+	}
+}
+
+function commitReconciliationEffects(finishedWork: Fiber) {
+	var flags = finishedWork.flags;
+	if (flags & Placement) {
+		commitPlacement(finishedWork);
+		finishedWork.flags &= ~Placement;
+	}
+	if (flags & Hydrating) {
+		finishedWork.flags &= ~Hydrating;
+	}
+}
+
+function commitDeletionEffects(root: FiberRoot, parentFiber: Fiber, deleteFiber: Fiber) {
+	// TODO 后续完善
+}
+function commitPlacement(finishedWork: Fiber) {
+	// TODO 后续完善
+	var parentFiber: Fiber = getHostParentFiber(finishedWork);
+	switch (parentFiber.tag) {
+		case HostRoot:
+			const _parent: Element = parentFiber.stateNode.containerInfo; // 根Fiber的DOM存放比较特殊
+			const _before = getHostSibling(finishedWork);
+			insertOrAppendPlacementNodeIntoContainer(finishedWork, _before, _parent);
+			break;
+	}
+}
+
+function getHostParentFiber(current: Fiber) {
+	let parent = current.return;
+	while (parent !== null) {
+		if (isHostParent(parent)) {
+			return parent;
+		}
+		parent = parent.return;
+	}
+	throw new Error(
+		"Expected to find a host parent. This error is likely caused by a bug " +
+			"in React. Please file an issue.",
+	);
+}
+
+function getHostSibling(fiber: Fiber) {}
+
+function insertOrAppendPlacementNodeIntoContainer(node: Fiber, before: any, parent: any): void {
+	const isHost = node.tag === HostComponent || node.tag === HostText;
+	if (isHost) {
+		if (before) {
+			// TODO 插入到before位置前面
+		} else {
+			// TODO appendChild插入到最后的位置
+		}
+	}
+}
+
+function isHostParent(fiber: Fiber): boolean {
+	return fiber.tag === HostComponent || fiber.tag === HostRoot || fiber.tag === HostPortal;
 }
 
 function commitBeforeMutationEffects(root: FiberRoot, firstChild: Fiber) {
