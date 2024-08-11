@@ -1,9 +1,17 @@
 import { ConcurrentRoot, RootTag } from "./ReactRootTags.ts";
-import { HostRoot, WorkTag } from "./ReactWorkTags.ts";
+import {
+	ClassComponent,
+	HostComponent,
+	HostRoot,
+	IndeterminateComponent,
+	WorkTag,
+} from "./ReactWorkTags.ts";
 import { State, UpdateQueue } from "./ReactFiberClassUpdateQueue.ts";
 import { ConcurrentMode, NoMode, TypeOfMode } from "./ReactTypeOfMode.ts";
 import { Lanes, NoLanes } from "./ReactFiberLane.ts";
 import { Flags, NoFlags } from "./ReactFiberFlags.ts";
+import { ReactElement } from "shared";
+import { Fiber } from "./ReactInternalTypes.ts";
 
 export function createHostRootFiber(tag: RootTag) {
 	let mode;
@@ -13,12 +21,67 @@ export function createHostRootFiber(tag: RootTag) {
 		mode = NoMode;
 	}
 	// tag => 决定mode的数据
-	return createFiber(HostRoot, null, mode);
+	return createFiber(HostRoot, null, null, mode);
 }
 
-function createFiber(tag: WorkTag, pendingProps: any, mode: TypeOfMode) {
+function createFiber(
+	tag: WorkTag,
+	pendingProps: any,
+	key: null | string,
+	mode: TypeOfMode,
+) {
 	// 这里的tag跟createHostRootFiber的tag是不同类型的！
-	return new FiberNode(tag, pendingProps, mode);
+	return new FiberNode(tag, pendingProps, key, mode);
+}
+
+function createFiberFromElement(
+	element: ReactElement,
+	mode: TypeOfMode,
+	lanes: Lanes,
+) {
+	const type = element.type;
+	const key = element.key;
+	const pendingProps = element.props;
+
+	const fiber = createFiberFromTypeAndProps(
+		type,
+		key,
+		pendingProps,
+		element._owner,
+		mode,
+		lanes,
+	);
+
+	return fiber;
+}
+
+function createFiberFromTypeAndProps(
+	type: any, // React$ElementType
+	key: null | string,
+	pendingProps: any,
+	owner: null | Fiber,
+	mode: TypeOfMode,
+	lanes: Lanes,
+) {
+	let fiberTag: WorkTag = IndeterminateComponent;
+	// 根据type的值去设置fiberTag的值
+	if (typeof type === "function" && shouldConstruct(type)) {
+		fiberTag = ClassComponent;
+	} else if (typeof type === "string") {
+		fiberTag = HostComponent;
+	}
+	// TODO 还有很多fiberTag没识别，后续在识别
+
+	const fiber = createFiber(fiberTag, pendingProps, key, mode);
+	fiber.elementType = type;
+	fiber.type = type;
+	fiber.lanes = lanes;
+	return fiber;
+}
+
+function shouldConstruct(Component: Function) {
+	const prototype = Component.prototype;
+	return !!(prototype && prototype.isReactComponent);
 }
 
 class FiberNode {
@@ -27,6 +90,9 @@ class FiberNode {
 	memoizedState: any;
 	updateQueue: UpdateQueue<State> | null;
 	mode: TypeOfMode;
+	elementType: any;
+	type: any;
+	key: string | null;
 	lanes: Lanes;
 	childLanes: Lanes;
 	alternate: FiberNode | null;
@@ -40,9 +106,17 @@ class FiberNode {
 	memoizedProps: any; // 上一次使用的旧的props
 	pendingProps: any; // 新的props
 
-	constructor(tag: WorkTag, pendingProps: any, mode: TypeOfMode) {
+	constructor(
+		tag: WorkTag,
+		pendingProps: any,
+		key: string | null,
+		mode: TypeOfMode,
+	) {
 		this.tag = tag;
 		this.mode = mode;
+		this.elementType = null;
+		this.type = null;
+		this.key = key;
 
 		// 下面直接为空
 		this.stateNode = null;
@@ -67,4 +141,4 @@ class FiberNode {
 	}
 }
 
-export { FiberNode, createFiber };
+export { FiberNode, createFiber, createFiberFromElement };

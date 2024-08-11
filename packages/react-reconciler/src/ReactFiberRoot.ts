@@ -11,7 +11,11 @@ import {
 } from "./ReactFiberLane.ts";
 import { NoTimestamp } from "./ReactFiberWorkLoop.ts";
 
-export type RootState = {};
+export type RootState = {
+	element: any;
+	isDehydrated: boolean;
+	cache: Cache;
+};
 
 class FiberRootNode {
 	containerInfo: any;
