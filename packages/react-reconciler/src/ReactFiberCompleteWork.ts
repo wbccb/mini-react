@@ -83,18 +83,18 @@ function bubbleProperties(workInProgress: Fiber) {
 
 	let newChildLanes = NoLanes;
 	let child = workInProgress.child;
-	let subTreeFlags = NoFlags;
+	let subtreeFlags = NoFlags;
 	if (!didBailout) {
 		// 合并fiber.lanes和fiber.childLanes
-		// 合并fiber.flags和fiber.subTreeFlags
+		// 合并fiber.flags和fiber.subtreeFlags
 		while (child !== null) {
 			newChildLanes = mergeLanes(newChildLanes, mergeLanes(child.childLanes, child.lanes));
-			subTreeFlags = subTreeFlags | child.flags;
-			subTreeFlags = subTreeFlags | child.subTreeFlags;
+			subtreeFlags = subtreeFlags | child.flags;
+			subtreeFlags = subtreeFlags | child.subtreeFlags;
 
 			child = child.sibling;
 		}
-		workInProgress.subTreeFlags = subTreeFlags;
+		workInProgress.subtreeFlags = subtreeFlags;
 		workInProgress.childLanes = newChildLanes;
 	} else {
 		// 没有改变

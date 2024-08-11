@@ -86,7 +86,7 @@ class FiberNode {
 	sibling: FiberNode | null;
 
 	flags: Flags;
-	subTreeFlags: Flags;
+	subtreeFlags: Flags;
 
 	memoizedProps: any; // 上一次使用的旧的props
 	pendingProps: any; // 新的props
@@ -115,7 +115,7 @@ class FiberNode {
 		this.sibling = null;
 
 		this.flags = NoFlags;
-		this.subTreeFlags = NoFlags;
+		this.subtreeFlags = NoFlags;
 
 		this.memoizedProps = null;
 		this.pendingProps = pendingProps;

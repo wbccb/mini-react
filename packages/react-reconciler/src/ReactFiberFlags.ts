@@ -24,3 +24,10 @@ export const RefStatic = /*                    */ 0b00001000000000000000000000;
 export const LayoutStatic = /*                 */ 0b00010000000000000000000000;
 export const PassiveStatic = /*                */ 0b00100000000000000000000000;
 export const StaticMask = LayoutStatic | PassiveStatic | RefStatic;
+
+export const BeforeMutationMask = Update | Snapshot | 0;
+export const MutationMask =
+	Placement | Update | ChildDeletion | ContentReset | Ref | Hydrating | Visibility;
+export const LayoutMask = Update | Callback | Ref | Visibility; // TODO: Split into PassiveMountMask and PassiveUnmountMask
+
+export const PassiveMask = Passive | ChildDeletion; // Union of tags that don't get reset on clones.

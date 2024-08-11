@@ -25,10 +25,22 @@ import {
 	cancelCallback,
 } from "shared";
 import { createFiber } from "./ReactFiber.ts";
-import { StaticMask } from "./ReactFiberFlags.ts";
+import {
+	BeforeMutationMask,
+	LayoutMask,
+	MutationMask,
+	NoFlags,
+	PassiveMask,
+	StaticMask,
+} from "./ReactFiberFlags.ts";
 import { finishQueueingConcurrentUpdates } from "./ReactFiberConcurrentUpdates.ts";
 import { beginWork } from "./ReactFiberBeginWork.ts";
 import { completeWork } from "./ReactFiberCompleteWork.ts";
+import {
+	commitBeforeMutationEffects,
+	commitLayoutEffects,
+	commitMutationEffects,
+} from "./ReactFiberCommitWork.ts";
 type ExecutionContext = number;
 
 const NoTimestamp = -1;
@@ -153,9 +165,7 @@ function performConcurrentWorkOnRoot(root: FiberRoot, didTimeout?: boolean) {
 	// 如果当前task已经过期（didTimeout等于true)，那么shouldTImeSlice=false，代表task必须马上执行，不能使用时间切片了！！！必须同步！马上！now！
 	// 当然如果lanes包含了过期的lane 或者 包含了同步lane，那么shouldTImeSlice=false，必须马上执行，不能使用时间切片
 	const shouldTImeSlice =
-		!includesBlockingLane(root, lanes) &&
-		!includesExpiredLane(root, lanes) &&
-		!didTimeout;
+		!includesBlockingLane(root, lanes) && !includesExpiredLane(root, lanes) && !didTimeout;
 
 	let exitStatus;
 	// render阶段
@@ -170,10 +180,7 @@ function performConcurrentWorkOnRoot(root: FiberRoot, didTimeout?: boolean) {
 
 		const renderWasConcurrent = !includesBlockingLane(root, lanes);
 		const finishedWork = root.current?.alternate!;
-		if (
-			renderWasConcurrent &&
-			!isRenderConsistentWithExternalStores(finishedWork)
-		) {
+		if (renderWasConcurrent && !isRenderConsistentWithExternalStores(finishedWork)) {
 			// TODO 还不是很理解这个场景，后续再完善
 		}
 
@@ -318,21 +325,52 @@ function completeUnitOfWork(unitOfWork: Fiber) {
 	}
 }
 
-function finishConcurrentRender(
-	root: FiberRoot,
-	exitStatus: RootExitStatus,
-	lanes: Lanes,
-) {}
+function finishConcurrentRender(root: FiberRoot, exitStatus: RootExitStatus, lanes: Lanes) {
+	switch (exitStatus) {
+		case RootCompleted:
+			commitRoot(root);
+			break;
+	}
+}
+
+function commitRoot(root: FiberRoot) {
+	commitRootImpl(root);
+}
+function commitRootImpl(root: FiberRoot) {
+	const finishedWork: Fiber = root.finishedWork!; // root.current.alternate就是finishedWork
+	const lanes = root.finishedLanes;
+
+	// 1. 判断是否需要有flags需要执行
+	const subtreeHasEffects =
+		(finishedWork.subtreeFlags & (BeforeMutationMask | MutationMask | LayoutMask | PassiveMask)) !==
+		NoFlags;
+	const rootHasEffect =
+		(finishedWork.flags & (BeforeMutationMask | MutationMask | LayoutMask | PassiveMask)) !==
+		NoFlags;
+
+	if (subtreeHasEffects || rootHasEffect) {
+		const prevExecutionContext = executionContext;
+		executionContext |= CommitContext;
+		// 2.1
+		commitBeforeMutationEffects(root, finishedWork);
+		// 2.2
+		commitMutationEffects(root, finishedWork, lanes);
+		// 2.3
+		commitLayoutEffects(finishedWork, root, lanes);
+
+		executionContext = prevExecutionContext;
+	}
+
+	ensureRootIsScheduled(root, now());
+	// TODO 后续完善
+	// flushSyncCallbacks()
+
+	return null;
+}
 
 function isRenderConsistentWithExternalStores(finishedWork: Fiber): boolean {
 	// TODO 还不是很理解，后续再完善
 	return false;
 }
 
-export {
-	NoTimestamp,
-	NoContext,
-	requestEventTime,
-	requestUpdateLane,
-	ensureRootIsScheduled,
-};
+export { NoTimestamp, NoContext, requestEventTime, requestUpdateLane, ensureRootIsScheduled };
