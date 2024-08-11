@@ -1,7 +1,7 @@
 import { Fiber } from "./ReactInternalTypes.ts";
 import { Lanes, mergeLanes, NoLane, NoLanes } from "./ReactFiberLane.ts";
-import { HostComponent, HostText } from "./ReactWorkTags.ts";
-import { NoFlags } from "./ReactFiberFlags.ts";
+import { HostComponent, HostRoot, HostText } from "./ReactWorkTags.ts";
+import { NoFlags, Snapshot } from "./ReactFiberFlags.ts";
 
 function completeWork(
 	current: Fiber | null,
@@ -21,6 +21,11 @@ function completeWork(
 				workInProgress.stateNode = instance;
 				finalizeInitialChildren(instance, type);
 			}
+			bubbleProperties(workInProgress);
+			return null;
+		}
+		case HostRoot: {
+			workInProgress.flags |= Snapshot;
 			bubbleProperties(workInProgress);
 			return null;
 		}
