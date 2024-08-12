@@ -8867,9 +8867,11 @@
     }
 
     function createTextNode(text, rootContainerElement) {
-        return getOwnerDocumentFromRootContainer(
+        const document = getOwnerDocumentFromRootContainer(
             rootContainerElement,
-        ).createTextNode(text);
+        );
+        debugger;
+        return document.createTextNode(text);
     }
 
     function setInitialProperties(
@@ -19816,6 +19818,7 @@
                             markUpdate(workInProgress);
                         }
                     } else {
+                        debugger;
                         workInProgress.stateNode = createTextInstance(
                             newText,
                             _rootContainerInstance,
@@ -20693,6 +20696,7 @@
         var flags = finishedWork.flags;
 
         if ((flags & Snapshot) !== NoFlags) {
+            debugger;
             switch (finishedWork.tag) {
                 case FunctionComponent:
                 case ForwardRef:
@@ -22258,6 +22262,7 @@
         var flags = finishedWork.flags;
 
         if (flags & Placement) {
+            debugger;
             try {
                 commitPlacement(finishedWork);
             } catch (error) {
