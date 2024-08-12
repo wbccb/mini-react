@@ -17,13 +17,12 @@
 <script type="text/babel">
     const domNode = document.getElementById('root');
     const root = ReactDOM.createRoot(domNode);
-    root.render("我是根节点的文本");
-    // root.render(
-    //     <div id="parent">
-    //         <span>我是Child1</span>
-    //         <p>我是Child2</p>
-    //         Child3
-    //     </div>
-    // );
+    // root.render("我是根节点的文本");
+    root.render(
+        <div id="parent">
+            <span>我是Child1</span>
+            Child2
+        </div>
+    );
 </script>
 </html>
