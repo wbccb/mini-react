@@ -12960,6 +12960,7 @@
                     : HooksDispatcherOnUpdate;
         }
 
+        debugger;
         var children = Component(props, secondArg); // Check if there was a render phase update
 
         if (didScheduleRenderPhaseUpdateDuringThisPass) {
@@ -23849,6 +23850,7 @@
 
         if (typeof type === "function") {
             if (shouldConstruct(type)) {
+                debugger;
                 fiberTag = ClassComponent;
             }
         } else if (typeof type === "string") {

@@ -17,14 +17,23 @@
 <script type="text/babel">
     const domNode = document.getElementById('root');
     const root = ReactDOM.createRoot(domNode);
-
     const App = ({testProps}) => {
         return (
-            <div id={"parent"} class={testProps}>
-                <p id={"child"}>我是child1</p>
+            <div id={"ClassComponent顶部div"} class={testProps}>
+                <p id={"ClassComponent内容p"}>我是child1</p>
             </div>
         )
     }
+    // const App = ({testProps}) => {
+    //     return (
+    //         <React.Fragment>
+    //             <div id={"ClassComponent顶部div"} class={testProps}>
+    //                 <p id={"ClassComponent内容p"}>我是child1</p>
+    //             </div>
+    //             <div></div>
+    //         </React.Fragment>
+    //     )
+    // }
     root.render(<App testProps={"app-children-wrapper"}/>);
 </script>
 </html>
