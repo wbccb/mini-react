@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+<div id="root"></div>
+</body>
+
+<script src='react.umd.development.js'></script>
+<script src='react-dom.umd.development.js'></script>
+<script src="babel.js"></script>
+<script type="text/babel">
+    const domNode = document.getElementById('root');
+    const root = ReactDOM.createRoot(domNode);
+
+    const App = ({testProps}) => {
+        return (
+            <div id={"parent"} class={testProps}>
+                <p id={"child"}>我是child1</p>
+            </div>
+        )
+    }
+    root.render(<App testProps={"app-children-wrapper"}/>);
+</script>
+</html>
