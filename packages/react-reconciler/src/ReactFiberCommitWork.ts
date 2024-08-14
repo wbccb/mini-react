@@ -49,7 +49,7 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 				// TODO 渲染更新再完善
 			}
 			return;
-		case HostComponent: {
+		case HostComponent:
 			recursivelyTraverseMutationEffects(root, finishedWork);
 			commitReconciliationEffects(finishedWork);
 			if (flags & Ref) {
@@ -57,6 +57,11 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 			if (flags & Update) {
 				// TODO 渲染更新再完善
 			}
+			return;
+		default: {
+			recursivelyTraverseMutationEffects(root, finishedWork);
+			commitReconciliationEffects(finishedWork);
+			return;
 		}
 	}
 }
