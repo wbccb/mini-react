@@ -32,4 +32,4 @@ function mountClassInstance(workInProgress: Fiber, Component: any, nextProps: an
 	}
 }
 
-export { constructClassInstance, mountClassInstance };
+export { constructClassInstance, mountClassInstance, adoptClassInstance };

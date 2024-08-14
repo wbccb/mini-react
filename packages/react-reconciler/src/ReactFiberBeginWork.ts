@@ -13,7 +13,11 @@ import { RootState } from "./ReactFiberRoot.ts";
 import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber.ts";
 import { PerformedWork } from "./ReactFiberFlags.ts";
 import { renderWithHooks } from "./ReactFiberHooks.ts";
-import { constructClassInstance, mountClassInstance } from "./ReactFiberClassComponent.ts";
+import {
+	adoptClassInstance,
+	constructClassInstance,
+	mountClassInstance,
+} from "./ReactFiberClassComponent.ts";
 
 function markRef(current: Fiber | null, workInProgress: Fiber) {
 	// TOOD 涉及到Ref相关内容在实现
@@ -131,13 +135,8 @@ function mountIndeterminateComponent(
 	Component: any, // workInProgress.type
 	renderLanes: Lanes,
 ): Fiber | null {
-	const value: any = renderWithHooks(
-		null,
-		workInProgress,
-		Component,
-		workInProgress.pendingProps,
-		renderLanes,
-	);
+	const props = workInProgress.pendingProps;
+	const value: any = renderWithHooks(null, workInProgress, Component, props, renderLanes);
 
 	workInProgress.flags |= PerformedWork;
 	if (
@@ -146,7 +145,10 @@ function mountIndeterminateComponent(
 		typeof value.render === "function" &&
 		value.$$typeof === undefined
 	) {
-		return null;
+		workInProgress.tag = ClassComponent;
+		adoptClassInstance(workInProgress, value);
+		mountClassInstance(workInProgress, Component, props, renderLanes);
+		return finishClassComponent(current, workInProgress, Component, props, renderLanes);
 	} else {
 		workInProgress.tag = FunctionComponent;
 		reconcileChildren(null, workInProgress, value, renderLanes);
