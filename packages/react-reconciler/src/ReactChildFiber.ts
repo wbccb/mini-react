@@ -90,6 +90,15 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		newChild: any,
 		lanes: Lanes,
 	): Fiber | null {
+		let isUnkeyedTopLevelFragment =
+			typeof newChild === "object" &&
+			newChild !== null &&
+			newChild.type === REACT_FRAGMENT_TYPE &&
+			newChild.key === null;
+		if (isUnkeyedTopLevelFragment) {
+			newChild = newChild.props.children;
+		}
+
 		if (typeof newChild === "object" && newChild !== null) {
 			switch (newChild.$$typeof) {
 				case REACT_ELEMENT_TYPE: {

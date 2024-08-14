@@ -1,6 +1,7 @@
 import { Fiber } from "./ReactInternalTypes.ts";
 import { Lanes, NoLanes } from "./ReactFiberLane.ts";
 import {
+	Fragment,
 	FunctionComponent,
 	HostComponent,
 	HostRoot,
@@ -34,6 +35,8 @@ function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: La
 			return updateHostComponent(current, workInProgress, renderLanes);
 		case HostText:
 			return updateHostText(current, workInProgress, renderLanes);
+		case Fragment:
+			return updateFragment(current, workInProgress, renderLanes);
 	}
 
 	// 至于当前fiber的children的fiber构建，会在completeUnitOfWork()迭代方法中触发
@@ -100,6 +103,16 @@ function updateHostText(
 	renderLanes: Lanes,
 ): Fiber | null {
 	return null;
+}
+
+function updateFragment(
+	current: Fiber | null,
+	workInProgress: Fiber,
+	renderLanes: Lanes,
+): Fiber | null {
+	const newNextChildren = workInProgress.pendingProps;
+	reconcileChildren(current, workInProgress, newNextChildren, renderLanes);
+	return workInProgress.child;
 }
 
 export { beginWork };
