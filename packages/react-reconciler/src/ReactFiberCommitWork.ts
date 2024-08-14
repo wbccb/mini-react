@@ -195,6 +195,16 @@ function insertOrAppendPlacementNodeIntoContainer(node: Fiber, before: any, pare
 		// 那么我们需要向下寻找fiber.child看看它具备不具备DOM，然后关联起来
 		// 关联完成后，还要关联fiber.child.sibling：因为你的fiber不具备DOM，因此dom.appendChild(fiber的所有children的DOM)
 		// 比如<><div/><span/><div/></>，#root 就得把所有<div>都加入到#root.appendChild()中，因为<div>的parent是<></>
+
+		let child = node.child;
+		if (child !== null) {
+			insertOrAppendPlacementNodeIntoContainer(child, before, parent);
+			let sibling = child.sibling;
+			while (sibling !== null) {
+				insertOrAppendPlacementNodeIntoContainer(sibling, before, parent);
+				sibling = child.sibling;
+			}
+		}
 	}
 }
 

@@ -71,6 +71,7 @@ function appendAllChildren(currentFiberDom: HTMLElement, workInProgress: Fiber) 
 		} else if (childFiber.child !== null) {
 			childFiber.child.return = childFiber;
 			childFiber = childFiber.child; // 比如<><div></div><>情况，这个<div>也算第一层级！
+			continue;
 		}
 
 		// 寻找它的sibling节点
