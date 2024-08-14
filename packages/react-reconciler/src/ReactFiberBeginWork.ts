@@ -13,6 +13,7 @@ import { RootState } from "./ReactFiberRoot.ts";
 import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber.ts";
 import { PerformedWork } from "./ReactFiberFlags.ts";
 import { renderWithHooks } from "./ReactFiberHooks.ts";
+import { constructClassInstance, mountClassInstance } from "./ReactFiberClassComponent.ts";
 
 function markRef(current: Fiber | null, workInProgress: Fiber) {
 	// TOOD 涉及到Ref相关内容在实现
@@ -42,6 +43,10 @@ function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: La
 			return updateFragment(current, workInProgress, renderLanes);
 		case IndeterminateComponent:
 			return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
+		case ClassComponent:
+			const _Component = workInProgress.type;
+			const props = workInProgress.pendingProps;
+			return updateClassComponent(current, workInProgress, _Component, props, renderLanes);
 	}
 
 	// 至于当前fiber的children的fiber构建，会在completeUnitOfWork()迭代方法中触发
@@ -147,6 +152,49 @@ function mountIndeterminateComponent(
 		reconcileChildren(null, workInProgress, value, renderLanes);
 		return workInProgress.child;
 	}
+}
+
+function updateClassComponent(
+	current: Fiber | null,
+	workInProgress: Fiber,
+	Component: any, // workInProgress.type
+	nextProps: any,
+	renderLanes: Lanes,
+) {
+	const instance = workInProgress.stateNode;
+	let shouldUpdate;
+
+	if (instance === null) {
+		constructClassInstance(workInProgress, Component, nextProps);
+		mountClassInstance(workInProgress, Component, nextProps, renderLanes);
+		shouldUpdate = true;
+	}
+
+	const nextUnitOfWork = finishClassComponent(
+		current,
+		workInProgress,
+		Component,
+		shouldUpdate,
+		renderLanes,
+	);
+	return nextUnitOfWork;
+}
+
+function finishClassComponent(
+	current: Fiber | null,
+	workInProgress: Fiber,
+	Component: any, // workInProgress.type
+	nextProps: any,
+	renderLanes: Lanes,
+) {
+	let instance = workInProgress.stateNode;
+
+	const nextChildren = instance.render();
+	workInProgress.flags |= PerformedWork;
+
+	reconcileChildren(current, workInProgress, nextChildren, renderLanes);
+	workInProgress.memoizedState = instance.state;
+	return workInProgress.child;
 }
 
 export { beginWork };
