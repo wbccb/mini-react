@@ -29,6 +29,11 @@ function completeWork(
 			bubbleProperties(workInProgress);
 			return null;
 		}
+		case HostText: {
+			workInProgress.stateNode = document.createTextNode(newProps);
+			bubbleProperties(workInProgress);
+			return null;
+		}
 	}
 
 	throw new Error(
