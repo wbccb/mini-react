@@ -1,6 +1,6 @@
 import { Fiber } from "./ReactInternalTypes.ts";
 import { Lanes, mergeLanes, NoLane, NoLanes } from "./ReactFiberLane.ts";
-import { HostComponent, HostRoot, HostText } from "./ReactWorkTags.ts";
+import { Fragment, HostComponent, HostRoot, HostText } from "./ReactWorkTags.ts";
 import { NoFlags, Snapshot } from "./ReactFiberFlags.ts";
 
 function completeWork(
@@ -31,6 +31,10 @@ function completeWork(
 		}
 		case HostText: {
 			workInProgress.stateNode = document.createTextNode(newProps);
+			bubbleProperties(workInProgress);
+			return null;
+		}
+		case Fragment: {
 			bubbleProperties(workInProgress);
 			return null;
 		}
