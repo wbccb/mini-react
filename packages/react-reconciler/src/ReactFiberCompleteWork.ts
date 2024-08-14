@@ -1,6 +1,12 @@
 import { Fiber } from "./ReactInternalTypes.ts";
 import { Lanes, mergeLanes, NoLane, NoLanes } from "./ReactFiberLane.ts";
-import { Fragment, HostComponent, HostRoot, HostText } from "./ReactWorkTags.ts";
+import {
+	Fragment,
+	HostComponent,
+	HostRoot,
+	HostText,
+	IndeterminateComponent,
+} from "./ReactWorkTags.ts";
 import { NoFlags, Snapshot } from "./ReactFiberFlags.ts";
 
 function completeWork(
@@ -34,6 +40,7 @@ function completeWork(
 			bubbleProperties(workInProgress);
 			return null;
 		}
+		case IndeterminateComponent:
 		case Fragment: {
 			bubbleProperties(workInProgress);
 			return null;
