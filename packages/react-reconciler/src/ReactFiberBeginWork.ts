@@ -1,6 +1,7 @@
 import { Fiber } from "./ReactInternalTypes.ts";
 import { Lanes, NoLanes } from "./ReactFiberLane.ts";
 import {
+	ClassComponent,
 	Fragment,
 	FunctionComponent,
 	HostComponent,
@@ -10,6 +11,8 @@ import {
 } from "./ReactWorkTags.ts";
 import { RootState } from "./ReactFiberRoot.ts";
 import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber.ts";
+import { PerformedWork } from "./ReactFiberFlags.ts";
+import { renderWithHooks } from "./ReactFiberHooks.ts";
 
 function markRef(current: Fiber | null, workInProgress: Fiber) {
 	// TOOD 涉及到Ref相关内容在实现
@@ -37,6 +40,8 @@ function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: La
 			return updateHostText(current, workInProgress, renderLanes);
 		case Fragment:
 			return updateFragment(current, workInProgress, renderLanes);
+		case IndeterminateComponent:
+			return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
 	}
 
 	// 至于当前fiber的children的fiber构建，会在completeUnitOfWork()迭代方法中触发
@@ -113,6 +118,35 @@ function updateFragment(
 	const newNextChildren = workInProgress.pendingProps;
 	reconcileChildren(current, workInProgress, newNextChildren, renderLanes);
 	return workInProgress.child;
+}
+
+function mountIndeterminateComponent(
+	current: Fiber | null,
+	workInProgress: Fiber,
+	Component: any, // workInProgress.type
+	renderLanes: Lanes,
+): Fiber | null {
+	const value: any = renderWithHooks(
+		null,
+		workInProgress,
+		Component,
+		workInProgress.pendingProps,
+		renderLanes,
+	);
+
+	workInProgress.flags |= PerformedWork;
+	if (
+		typeof value === "object" &&
+		value !== null &&
+		typeof value.render === "function" &&
+		value.$$typeof === undefined
+	) {
+		return null;
+	} else {
+		workInProgress.tag = FunctionComponent;
+		reconcileChildren(null, workInProgress, value, renderLanes);
+		return workInProgress.child;
+	}
 }
 
 export { beginWork };

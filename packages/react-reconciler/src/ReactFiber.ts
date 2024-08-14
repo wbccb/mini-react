@@ -56,8 +56,11 @@ function createFiberFromTypeAndProps(
 ) {
 	let fiberTag: WorkTag = IndeterminateComponent;
 	// 根据type的值去设置fiberTag的值
-	if (typeof type === "function" && shouldConstruct(type)) {
-		fiberTag = ClassComponent;
+	if (typeof type === "function") {
+		if(shouldConstruct(type)) {
+			// FunctionComponent初始设置tag=IndeterminateComponent
+			fiberTag = ClassComponent;
+		}
 	} else if (typeof type === "string") {
 		fiberTag = HostComponent;
 	}
