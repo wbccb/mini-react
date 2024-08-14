@@ -26,16 +26,24 @@ export const REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list");
 export const REACT_MEMO_TYPE = Symbol.for("react.memo");
 export const REACT_LAZY_TYPE = Symbol.for("react.lazy");
 export const REACT_SCOPE_TYPE = Symbol.for("react.scope");
-export const REACT_DEBUG_TRACING_MODE_TYPE = Symbol.for(
-	"react.debug_trace_mode",
-);
+export const REACT_DEBUG_TRACING_MODE_TYPE = Symbol.for("react.debug_trace_mode");
 export const REACT_OFFSCREEN_TYPE = Symbol.for("react.offscreen");
 export const REACT_LEGACY_HIDDEN_TYPE = Symbol.for("react.legacy_hidden");
 export const REACT_CACHE_TYPE = Symbol.for("react.cache");
 export const REACT_TRACING_MARKER_TYPE = Symbol.for("react.tracing_marker");
-export const REACT_SERVER_CONTEXT_DEFAULT_VALUE_NOT_LOADED = Symbol.for(
-	"react.default_value",
-);
+export const REACT_SERVER_CONTEXT_DEFAULT_VALUE_NOT_LOADED = Symbol.for("react.default_value");
 
-const MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
-const FAUX_ITERATOR_SYMBOL = "@@iterator";
+// const MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
+// const FAUX_ITERATOR_SYMBOL = "@@iterator";
+
+export function getIteratorFn(obj: any) {
+	if (obj === null || typeof obj !== "object") {
+		return null;
+	}
+
+	const fn = (Symbol.iterator && obj[Symbol.iterator]) || obj["@@iterator"];
+	if (typeof fn === "function") {
+		return fn;
+	}
+	return null;
+}

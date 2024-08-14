@@ -3,6 +3,7 @@ import {
 	ClassComponent,
 	HostComponent,
 	HostRoot,
+	HostText,
 	IndeterminateComponent,
 	WorkTag,
 } from "./ReactWorkTags.ts";
@@ -27,6 +28,12 @@ export function createHostRootFiber(tag: RootTag) {
 function createFiber(tag: WorkTag, pendingProps: any, key: null | string, mode: TypeOfMode) {
 	// 这里的tag跟createHostRootFiber的tag是不同类型的！
 	return new FiberNode(tag, pendingProps, key, mode);
+}
+
+function createFiberFromText(content: string, mode: TypeOfMode, lanes: Lanes) {
+	const fiber = createFiber(HostText, content, null, mode);
+	fiber.lanes = lanes;
+	return fiber;
 }
 
 function createFiberFromElement(element: ReactElement, mode: TypeOfMode, lanes: Lanes) {
@@ -92,6 +99,8 @@ class FiberNode {
 	memoizedProps: any; // 上一次使用的旧的props
 	pendingProps: any; // 新的props
 
+	index: number;
+
 	constructor(tag: WorkTag, pendingProps: any, key: string | null, mode: TypeOfMode) {
 		this.tag = tag;
 		this.mode = mode;
@@ -121,7 +130,9 @@ class FiberNode {
 
 		this.memoizedProps = null;
 		this.pendingProps = pendingProps;
+
+		this.index = 0;
 	}
 }
 
-export { FiberNode, createFiber, createFiberFromElement };
+export { FiberNode, createFiber, createFiberFromElement, createFiberFromText };

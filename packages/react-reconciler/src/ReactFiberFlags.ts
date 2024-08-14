@@ -20,6 +20,8 @@ export const Hydrating = /*                    */ 0b00000000000001000000000000;
 export const Visibility = /*                   */ 0b00000000000010000000000000;
 export const StoreConsistency = /*             */ 0b00000000000100000000000000;
 
+export const Forked = /*                       */ 0b00000100000000000000000000;
+
 export const RefStatic = /*                    */ 0b00001000000000000000000000;
 export const LayoutStatic = /*                 */ 0b00010000000000000000000000;
 export const PassiveStatic = /*                */ 0b00100000000000000000000000;
