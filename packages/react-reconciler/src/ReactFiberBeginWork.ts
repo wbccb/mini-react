@@ -18,11 +18,7 @@ function markRef(current: Fiber | null, workInProgress: Fiber) {
  * 1. 对当前workInProgress进行beginWork()处理（reconcileChildren子节点，返回第一个子节点）
  * 2. 返回workInProgress.child子节点
  */
-function beginWork(
-	current: Fiber | null,
-	workInProgress: Fiber,
-	renderLanes: Lanes,
-): Fiber | null {
+function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: Lanes): Fiber | null {
 	// 记住：当前fiber是已经创建好的，一开始是HostRoot（初始化就创建好的fiber)->reconcileChildren()创建fiber.child
 	// completeOfWork()切换当前fiber从HostRoot->上面创建的HostRoot.child作为当前fiber，然后继续reconcileChildren()创建当前fiber.child
 	// 然后继续completeOfWork()切换当前fiber为新创建的fiber
@@ -36,6 +32,8 @@ function beginWork(
 			return updateHostRoot(current, workInProgress, renderLanes);
 		case HostComponent:
 			return updateHostComponent(current, workInProgress, renderLanes);
+		case HostText:
+			return updateHostText(current, workInProgress, renderLanes);
 	}
 
 	// 至于当前fiber的children的fiber构建，会在completeUnitOfWork()迭代方法中触发
@@ -54,12 +52,7 @@ function reconcileChildren(
 	renderLanes: Lanes,
 ) {
 	if (current === null) {
-		workInProgress.child = mountChildFibers(
-			workInProgress,
-			null,
-			nextChildren,
-			renderLanes,
-		);
+		workInProgress.child = mountChildFibers(workInProgress, null, nextChildren, renderLanes);
 	} else {
 		workInProgress.child = reconcileChildFibers(
 			workInProgress,
@@ -99,6 +92,14 @@ function updateHostComponent(
 	markRef(current, workInProgress);
 	reconcileChildren(current, workInProgress, nextChildren, renderLanes);
 	return workInProgress.child;
+}
+
+function updateHostText(
+	current: Fiber | null,
+	workInProgress: Fiber,
+	renderLanes: Lanes,
+): Fiber | null {
+	return null;
 }
 
 export { beginWork };
