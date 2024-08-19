@@ -11958,6 +11958,7 @@
     var concurrentlyUpdatedLanes = NoLanes;
 
     function finishQueueingConcurrentUpdates() {
+        debugger;
         var endIndex = concurrentQueuesIndex;
         concurrentQueuesIndex = 0;
         concurrentlyUpdatedLanes = NoLanes;
@@ -12938,10 +12939,11 @@
     function renderWithHooks(current, workInProgress, Component, props, secondArg, nextRenderLanes) {
         renderLanes = nextRenderLanes;
         currentlyRenderingFiber$1 = workInProgress;
-
+        console.warn("renderWithHooks(): currentlyRenderingFiber$1 = workInProgress");
         workInProgress.memoizedState = null;
         workInProgress.updateQueue = null;
-        workInProgress.lanes = NoLanes; // The following should have already been reset
+        workInProgress.lanes = NoLanes;
+        // The following should have already been reset
         // currentHook = null;
         // workInProgressHook = null;
         // didScheduleRenderPhaseUpdate = false;
@@ -12960,6 +12962,7 @@
                     : HooksDispatcherOnUpdate;
         }
 
+        debugger;
         var children = Component(props, secondArg); // Check if there was a render phase update
 
         if (didScheduleRenderPhaseUpdateDuringThisPass) {
@@ -12998,6 +13001,7 @@
         currentlyRenderingFiber$1 = null;
         currentHook = null;
         workInProgressHook = null;
+        console.warn("renderWithHooks(): currentlyRenderingFiber$1 = null");
 
         didScheduleRenderPhaseUpdate = false; // This is reset by checkDidRenderIdHook
         // localIdCounter = 0;
@@ -13091,6 +13095,7 @@
     }
 
     function updateWorkInProgressHook() {
+        debugger;
         // This function is used both for updates and for re-renders triggered by a
         // render phase update. It assumes there is either a current hook we can
         // clone, or a work-in-progress hook from a previous render pass that we can
@@ -13163,6 +13168,10 @@
     }
 
     function mountReducer(reducer, initialArg, init) {
+        debugger;
+        console.warn("useReducer初始化");
+        console.info( reducer, initialArg, init);
+
         var hook = mountWorkInProgressHook();
         var initialState;
 
@@ -13190,6 +13199,7 @@
     }
 
     function updateReducer(reducer, initialArg, init) {
+        debugger;
         var hook = updateWorkInProgressHook();
         var queue = hook.queue;
 
@@ -13197,12 +13207,12 @@
             throw new Error("Should have a queue. This is likely a bug in React. Please file an issue.");
         }
 
-        console.error("useReducer update", initialArg, init);
-
         queue.lastRenderedReducer = reducer;
         var current = currentHook; // The last rebase update that is NOT part of the base state.
 
         var baseQueue = current.baseQueue; // The last pending update that hasn't been processed yet.
+
+        console.error("useReducer update", initialArg, init, baseQueue);
 
         var pendingQueue = queue.pending;
 
@@ -21813,6 +21823,7 @@
     // exiting a task.
 
     function ensureRootIsScheduled(root, currentTime) {
+        console.info("ensureRootIsScheduled()");
         var existingCallbackNode = root.callbackNode; // Check if any lanes are being starved by other work. If so, mark them as
         // expired so we know to work on those next.
 
