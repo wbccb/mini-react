@@ -259,4 +259,8 @@ function dispatchSetState(fiber: Fiber, queue: UpdateQueue<any, any>, action: an
 	}
 }
 
+function updateState(initialState: State) {
+	return updateReducer(basicStateReducer, initialState);
+}
+
 export { renderWithHooks };
