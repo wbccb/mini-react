@@ -204,4 +204,28 @@ function updateWorkInProgressHook() {
 	return workInProgressHook;
 }
 
+function basicStateReducer(state: State, action: any) {
+	return typeof action === "function" ? action(state) : action;
+}
+
+function mountState(initialState: State) {
+	const hook = mountWorkProgressHook();
+	if (typeof initialState === "function") {
+		initialState = initialState();
+	}
+	hook.memoizedState = hook.baseState = initialState;
+	const queue: UpdateQueue<any, any> = {
+		pending: null,
+		lanes: NoLanes,
+		dispatch: null,
+		lastRenderedReducer: basicStateReducer,
+		lastRenderedState: initialState,
+	};
+	hook.queue = queue;
+	queue.dispatch = dispatchSetState.bind(null, currentlyRenderingFiber!, queue);
+	return [hook.memoizedState, queue.dispatch];
+}
+
+function dispatchSetState(fiber: Fiber, queue: UpdateQueue<any, any>, action: any) {}
+
 export { renderWithHooks };
