@@ -225,7 +225,38 @@ function mountState(initialState: State) {
 	queue.dispatch = dispatchSetState.bind(null, currentlyRenderingFiber!, queue);
 	return [hook.memoizedState, queue.dispatch];
 }
+function is(x: any, y: any) {
+	return (
+		(x === y && (x !== 0 || 1 / x === 1 / y)) || (x !== x && y !== y) // eslint-disable-line no-self-compare
+	);
+}
+function dispatchSetState(fiber: Fiber, queue: UpdateQueue<any, any>, action: any) {
+	const lane = requestUpdateLane(fiber);
+	const update: Update<any, any> = {
+		lane,
+		action,
+		hasEagerState: false,
+		eagerState: null,
+		next: null,
+	};
 
-function dispatchSetState(fiber: Fiber, queue: UpdateQueue<any, any>, action: any) {}
+	// 如果没有更新，则阻止将update加入到队列中，并且触发调度
+	const alternate = fiber.alternate;
+	if(fiber.lanes === NoLanes || (alternate === null || alternate.lanes === NoLanes)) {
+		const lastRenderedReducer = queue.lastRenderedReducer;
+		const currentState = queue.lastRenderedState;
+		const eagerState = lastRenderedReducer!(currentState, action);
+		if(is(currentState, eagerState)) {
+			return;
+		}
+	}
+
+	// @ts-ignore
+	const root = enqueueConcurrentClassUpdate(fiber, queue, update, lane);
+	if (root !== null) {
+		const eventTime = requestEventTime();
+		scheduleUpdateOnFiber(root, fiber, lane, eventTime);
+	}
+}
 
 export { renderWithHooks };
