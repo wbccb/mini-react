@@ -12939,7 +12939,8 @@
     function renderWithHooks(current, workInProgress, Component, props, secondArg, nextRenderLanes) {
         renderLanes = nextRenderLanes;
         currentlyRenderingFiber$1 = workInProgress;
-        console.warn("renderWithHooks(): currentlyRenderingFiber$1 = workInProgress");
+        console.warn("renderWithHooks()", current, workInProgress);
+        debugger;
         workInProgress.memoizedState = null;
         workInProgress.updateQueue = null;
         workInProgress.lanes = NoLanes;
@@ -22952,7 +22953,7 @@
 
         var finishedWork = root.finishedWork;
         var lanes = root.finishedLanes;
-
+        debugger;
         {
             markCommitStarted(lanes);
         }
@@ -23692,6 +23693,7 @@
             workInProgress.stateNode = current.stateNode;
 
             workInProgress.alternate = current;
+            workInProgress.testMode ="我是当前Root.current复制出来的alternate!!!"
             current.alternate = workInProgress;
         } else {
             workInProgress.pendingProps = pendingProps; // Needed because Blocks store data on type.
@@ -23830,7 +23832,9 @@
             mode |= ProfileMode;
         }
 
-        return createFiber(HostRoot, null, null, mode);
+        var fiber = createFiber(HostRoot, null, null, mode);
+        fiber.testMode = "我是一开始render()创建的fiber!!!";
+        return fiber;
     }
 
     function createFiberFromTypeAndProps(
