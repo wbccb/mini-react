@@ -1,5 +1,5 @@
-import { Fiber } from "./ReactInternalTypes.ts";
-import { Lanes, mergeLanes, NoLane, NoLanes } from "./ReactFiberLane.ts";
+import { Fiber } from "./ReactInternalTypes";
+import { Lanes, mergeLanes, NoLane, NoLanes } from "./ReactFiberLane";
 import {
 	ClassComponent,
 	Fragment,
@@ -7,8 +7,8 @@ import {
 	HostRoot,
 	HostText,
 	IndeterminateComponent,
-} from "./ReactWorkTags.ts";
-import { NoFlags, Snapshot } from "./ReactFiberFlags.ts";
+} from "./ReactWorkTags";
+import { NoFlags, Snapshot } from "./ReactFiberFlags";
 
 function completeWork(
 	current: Fiber | null,

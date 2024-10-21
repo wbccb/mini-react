@@ -10,21 +10,21 @@ import {
 	getHighestPriorityLane,
 	includesBlockingLane,
 	includesExpiredLane,
-} from "./ReactFiberLane.ts";
-import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
-import { ConcurrentMode, NoMode } from "./ReactTypeOfMode.ts";
+} from "./ReactFiberLane";
+import { Fiber, FiberRoot } from "./ReactInternalTypes";
+import { ConcurrentMode, NoMode } from "./ReactTypeOfMode";
 import {
 	DefaultEventPriority,
 	getCurrentUpdatePriority,
 	lanesToEventPriority,
-} from "./ReactEventPriorities.ts";
+} from "./ReactEventPriorities";
 import { getCurrentEventPriority } from "react-dom/client";
 import {
 	NormalPriority as NormalSchedulerPriority,
 	scheduleCallback,
 	cancelCallback,
 } from "shared";
-import { createFiber } from "./ReactFiber.ts";
+import { createFiber } from "./ReactFiber";
 import {
 	BeforeMutationMask,
 	LayoutMask,
@@ -32,15 +32,15 @@ import {
 	NoFlags,
 	PassiveMask,
 	StaticMask,
-} from "./ReactFiberFlags.ts";
-import { finishQueueingConcurrentUpdates } from "./ReactFiberConcurrentUpdates.ts";
-import { beginWork } from "./ReactFiberBeginWork.ts";
-import { completeWork } from "./ReactFiberCompleteWork.ts";
+} from "./ReactFiberFlags";
+import { finishQueueingConcurrentUpdates } from "./ReactFiberConcurrentUpdates";
+import { beginWork } from "./ReactFiberBeginWork";
+import { completeWork } from "./ReactFiberCompleteWork";
 import {
 	commitBeforeMutationEffects,
 	commitLayoutEffects,
 	commitMutationEffects,
-} from "./ReactFiberCommitWork.ts";
+} from "./ReactFiberCommitWork";
 type ExecutionContext = number;
 
 const NoTimestamp = -1;
@@ -251,7 +251,7 @@ function prepareFreshStack(root: FiberRoot, lanes: Lanes) {
 function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
 	let workInProgress = current.alternate;
 	if (workInProgress === null) {
-		workInProgress = createFiber(current.tag, pendingProps, current.mode);
+		workInProgress = createFiber(current.tag, pendingProps, null, current.mode);
 		workInProgress.stateNode = current.stateNode;
 
 		workInProgress.alternate = current; // workInProgress和current相关邦定

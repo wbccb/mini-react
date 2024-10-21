@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "es5", // package.json命令中可以设置
+    "module": "commonjs", // package.json命令中可以设置
+    "moduleResolution": "node",
     "useDefineForClassFields": true,
-    "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "declaration": true, // 输出.d.ts文件
 
     /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
+    "allowImportingTsExtensions": false,
     "isolatedModules": true,
     "moduleDetection": "force",
 
@@ -18,11 +18,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-
-    "emitDeclarationOnly": true, // 只输出声明文件(ts 产物)
-    "declaration": true, // 自动生成声明文件
-    "declarationDir": "dist", // 声明文件生成的目录
   },
-  "include": ["./src/*"],
-  "outDir": "dist"
+  "include": ["src/**/*", "**/*.d.ts", "**/*.ts"],
+  "exclude": ["node_modules", "**/*.spec.ts", "es", "lib", "__tests__", "vite.config.ts"] // 剔除vite.config.ts
 }

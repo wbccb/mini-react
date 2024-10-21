@@ -10,12 +10,11 @@ import {
 	NORMAL_PRIORITY_TIMEOUT,
 	LOW_PRIORITY_TIMEOUT,
 	IDLE_PRIORITY_TIMEOUT,
-} from "./SchedulerPriorities.ts";
-import { MinHeap, Task } from "./MinHeap.ts";
+} from "./SchedulerPriorities";
+import { MinHeap, Task } from "./MinHeap";
 
 let getCurrentTime: () => number;
-const hasPerformanceNow =
-	typeof performance === "object" && typeof performance.now === "function";
+const hasPerformanceNow = typeof performance === "object" && typeof performance.now === "function";
 
 if (hasPerformanceNow) {
 	const localPerformance = performance;
@@ -34,18 +33,14 @@ let taskIdCounter = 1; // taskId，不断进行递增
 let isHostCallbackScheduled = false; // 防止多次触发: requestHostCallback(flushWork)
 let isMessageLoopRunning = false; // 防止多次触发: MessageChannel的message.post(null)
 let isPerformingWork = false; // 防止多次触发: flushWork(),本质就是workLoop()
-let taskTimeoutID = -1;
+let taskTimeoutID: any = -1;
 
 let isHostTimeoutScheduled = false; // 倒计时timerQueue的task任务
 
 let timerQueue = new MinHeap();
 let taskQueue = new MinHeap();
 
-function scheduleCallback(
-	priorityLevel: Lane,
-	callback: any,
-	options?: { delay: number },
-) {
+function scheduleCallback(priorityLevel: Lane, callback: any, options?: { delay: number }) {
 	let currentTime = getCurrentTime();
 	let startTime = currentTime;
 
@@ -265,10 +260,7 @@ function advanceTimers(currentTime: number) {
 	}
 }
 
-function requestHostTimeout(
-	callback: (currentTime: number) => void,
-	ms: number,
-) {
+function requestHostTimeout(callback: (currentTime: number) => void, ms: number) {
 	taskTimeoutID = setTimeout(() => {
 		const currentTime = getCurrentTime();
 		callback(currentTime);

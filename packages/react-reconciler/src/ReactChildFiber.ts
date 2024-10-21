@@ -1,8 +1,8 @@
-import { Fiber } from "./ReactInternalTypes.ts";
-import { Lanes } from "./ReactFiberLane.ts";
+import { Fiber } from "./ReactInternalTypes";
+import { Lanes } from "./ReactFiberLane";
 import { getIteratorFn, REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE, ReactElement } from "shared";
-import { createFiberFromElement, createFiberFromText } from "./ReactFiber.ts";
-import { Forked, Placement } from "./ReactFiberFlags.ts";
+import { createFiberFromElement, createFiberFromText } from "./ReactFiber";
+import { Forked, Placement } from "./ReactFiberFlags";
 
 function ChildReconciler(shouldTrackSideEffects: boolean) {
 	function reconcileSingleElement(
@@ -12,6 +12,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		lanes: Lanes,
 	): Fiber {
 		if (newChild.type === REACT_FRAGMENT_TYPE) {
+			return {} as Fiber;
 		} else {
 			const newFiber: Fiber = createFiberFromElement(newChild, parentFiber.mode, lanes);
 			newFiber.return = parentFiber;

@@ -9,9 +9,8 @@
     "./client": "./client.ts"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build --watch",
-    "preview": "vite preview"
+    "build:esm": "tsc --module esnext --target es5 --outDir ./es",
+    "build:cjs": "tsc --module commonjs --target es5 --outDir ./lib"
   },
   "dependencies": {
     "react-reconciler": "workspace:*",

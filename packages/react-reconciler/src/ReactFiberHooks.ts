@@ -1,9 +1,12 @@
-import { Fiber } from "./ReactInternalTypes.ts";
+import { Fiber } from "./ReactInternalTypes";
 import { Props } from "react-dom/client";
-import { Lane, Lanes, NoLanes } from "./ReactFiberLane.ts";
-import { scheduleUpdateOnFiber, State } from "./ReactFiberClassUpdateQueue.ts";
-import { requestEventTime, requestUpdateLane } from "./ReactFiberWorkLoop.ts";
-import { enqueueConcurrentClassUpdate } from "./ReactFiberConcurrentUpdates.ts";
+import { Lane, Lanes, NoLanes } from "./ReactFiberLane";
+import { scheduleUpdateOnFiber, State } from "./ReactFiberClassUpdateQueue";
+import { requestEventTime, requestUpdateLane } from "./ReactFiberWorkLoop";
+import {
+	enqueueConcurrentClassUpdate,
+	enqueueConcurrentHookUpdate,
+} from "./ReactFiberConcurrentUpdates";
 
 let renderLanes: Lanes = NoLanes;
 let currentlyRenderingFiber: Fiber | null = null;
@@ -17,16 +20,16 @@ let ReactCurrentDispatcher = {
 
 type Reducer = ((state: State, action: any) => any) | null;
 
-type Update<S, A> = {
+export type FiberUpdate<S, A> = {
 	lane: Lane;
 	action: A;
 	hasEagerState: boolean;
 	eagerState: S | null;
-	next: Update<S, A> | null;
+	next: FiberUpdate<S, A> | null;
 };
 
-interface UpdateQueue<S, A> {
-	pending: Update<S, A> | null;
+export interface FiberUpdateQueue<S, A> {
+	pending: FiberUpdate<S, A> | null;
 	lanes: Lanes;
 	dispatch: ((arg0: A) => any) | null;
 	lastRenderedReducer: Reducer;
@@ -36,7 +39,7 @@ interface UpdateQueue<S, A> {
 type Hook = {
 	memoizedState: any;
 	baseState: any;
-	baseQueue: Update<any, any> | null;
+	baseQueue: FiberUpdate<any, any> | null;
 	queue: any;
 	next: Hook | null;
 };
@@ -93,7 +96,7 @@ function mountReducer(reducer: Reducer, initialArg: any, init?: (initialArg: any
 	}
 	hook.memoizedState = hook.baseState = initialState;
 
-	const queue: UpdateQueue<any, any> = {
+	const queue: FiberUpdateQueue<any, any> = {
 		pending: null,
 		lanes: NoLanes,
 		dispatch: null,
@@ -124,17 +127,17 @@ function mountWorkProgressHook(): Hook {
 	return workInProgressHook!;
 }
 
-function dispatchReducerAction(fiber: Fiber, queue: UpdateQueue<any, any>, action: any) {
+function dispatchReducerAction(fiber: Fiber, queue: FiberUpdateQueue<any, any>, action: any) {
 	const lane = requestUpdateLane(fiber);
-	const update: Update<any, any> = {
+	const update: FiberUpdate<any, any> = {
 		lane,
 		action,
 		hasEagerState: false,
 		eagerState: null,
 		next: null,
 	};
-	// @ts-ignore
-	const root = enqueueConcurrentClassUpdate(fiber, queue, update, lane);
+	//
+	const root = enqueueConcurrentHookUpdate(fiber, queue, update, lane);
 	if (root !== null) {
 		const eventTime = requestEventTime();
 		scheduleUpdateOnFiber(root, fiber, lane, eventTime);
@@ -214,7 +217,7 @@ function mountState(initialState: State) {
 		initialState = initialState();
 	}
 	hook.memoizedState = hook.baseState = initialState;
-	const queue: UpdateQueue<any, any> = {
+	const queue: FiberUpdateQueue<any, any> = {
 		pending: null,
 		lanes: NoLanes,
 		dispatch: null,
@@ -225,14 +228,16 @@ function mountState(initialState: State) {
 	queue.dispatch = dispatchSetState.bind(null, currentlyRenderingFiber!, queue);
 	return [hook.memoizedState, queue.dispatch];
 }
+
 function is(x: any, y: any) {
 	return (
 		(x === y && (x !== 0 || 1 / x === 1 / y)) || (x !== x && y !== y) // eslint-disable-line no-self-compare
 	);
 }
-function dispatchSetState(fiber: Fiber, queue: UpdateQueue<any, any>, action: any) {
+
+function dispatchSetState(fiber: Fiber, queue: FiberUpdateQueue<any, any>, action: any) {
 	const lane = requestUpdateLane(fiber);
-	const update: Update<any, any> = {
+	const update: FiberUpdate<any, any> = {
 		lane,
 		action,
 		hasEagerState: false,
@@ -242,17 +247,16 @@ function dispatchSetState(fiber: Fiber, queue: UpdateQueue<any, any>, action: an
 
 	// 如果没有更新，则阻止将update加入到队列中，并且触发调度
 	const alternate = fiber.alternate;
-	if(fiber.lanes === NoLanes || (alternate === null || alternate.lanes === NoLanes)) {
+	if (fiber.lanes === NoLanes || alternate === null || alternate.lanes === NoLanes) {
 		const lastRenderedReducer = queue.lastRenderedReducer;
 		const currentState = queue.lastRenderedState;
 		const eagerState = lastRenderedReducer!(currentState, action);
-		if(is(currentState, eagerState)) {
+		if (is(currentState, eagerState)) {
 			return;
 		}
 	}
 
-	// @ts-ignore
-	const root = enqueueConcurrentClassUpdate(fiber, queue, update, lane);
+	const root = enqueueConcurrentHookUpdate(fiber, queue, update, lane);
 	if (root !== null) {
 		const eventTime = requestEventTime();
 		scheduleUpdateOnFiber(root, fiber, lane, eventTime);

@@ -1,39 +1,33 @@
-import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
-import {
-	Lane,
-	Lanes,
-	markRootUpdated,
-	NoLanes,
-	SyncLane,
-} from "./ReactFiberLane.ts";
-import { enqueueConcurrentClassUpdate } from "./ReactFiberConcurrentUpdates.ts";
-import { ensureRootIsScheduled } from "./ReactFiberWorkLoop.ts";
+import { Fiber, FiberRoot } from "./ReactInternalTypes";
+import { Lane, Lanes, markRootUpdated, NoLanes, SyncLane } from "./ReactFiberLane";
+import { enqueueConcurrentClassUpdate } from "./ReactFiberConcurrentUpdates";
+import { ensureRootIsScheduled } from "./ReactFiberWorkLoop";
 
 export type State = {};
-export type Update<State> = {
+export type FiberClassUpdate<State> = {
 	eventTime: number;
 	lane: Lane;
 
 	payload: any;
 
-	next: Update<State> | null;
+	next: FiberClassUpdate<State> | null;
 };
 
 export type SharedQueue<State> = {
-	pending: Update<State> | null;
+	pending: FiberClassUpdate<State> | null;
 	lanes: Lanes;
 };
 
-export type UpdateQueue<State> = {
+export type FiberClassUpdateQueue<State> = {
 	baseState: State;
-	firstBaseUpdate: Update<State> | null;
-	lastBaseUpdate: Update<State> | null;
+	firstBaseUpdate: FiberClassUpdate<State> | null;
+	lastBaseUpdate: FiberClassUpdate<State> | null;
 
 	shared: SharedQueue<State>;
 };
 
 function initializeUpdateQueue(fiber: Fiber) {
-	const queue: UpdateQueue<State> = {
+	const queue: FiberClassUpdateQueue<State> = {
 		baseState: fiber.memoizedState,
 		firstBaseUpdate: null,
 		lastBaseUpdate: null,
@@ -46,7 +40,7 @@ function initializeUpdateQueue(fiber: Fiber) {
 }
 
 function createUpdate(eventTime: number, lane: Lane) {
-	const update: Update<any> = {
+	const update: FiberClassUpdate<any> = {
 		eventTime,
 		lane,
 
@@ -56,11 +50,7 @@ function createUpdate(eventTime: number, lane: Lane) {
 	return update;
 }
 
-function enqueueUpdate(
-	fiber: Fiber,
-	update: Update<any>,
-	lane: Lane,
-): FiberRoot | null {
+function enqueueUpdate(fiber: Fiber, update: FiberClassUpdate<any>, lane: Lane): FiberRoot | null {
 	const updateQueue = fiber.updateQueue;
 	if (updateQueue === null) {
 		return null;
@@ -70,12 +60,7 @@ function enqueueUpdate(
 	return enqueueConcurrentClassUpdate(fiber, sharedQueue, update, lane);
 }
 
-function scheduleUpdateOnFiber(
-	root: FiberRoot,
-	fiber: Fiber,
-	lane: Lane,
-	eventTime: number,
-) {
+function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber, lane: Lane, eventTime: number) {
 	markRootUpdated(root, lane, eventTime);
 	ensureRootIsScheduled(root, eventTime);
 

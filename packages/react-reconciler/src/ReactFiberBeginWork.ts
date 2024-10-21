@@ -1,5 +1,5 @@
-import { Fiber } from "./ReactInternalTypes.ts";
-import { Lanes, NoLanes } from "./ReactFiberLane.ts";
+import { Fiber } from "./ReactInternalTypes";
+import { Lanes, NoLanes } from "./ReactFiberLane";
 import {
 	ClassComponent,
 	Fragment,
@@ -8,16 +8,16 @@ import {
 	HostRoot,
 	HostText,
 	IndeterminateComponent,
-} from "./ReactWorkTags.ts";
-import { RootState } from "./ReactFiberRoot.ts";
-import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber.ts";
-import { PerformedWork } from "./ReactFiberFlags.ts";
-import { renderWithHooks } from "./ReactFiberHooks.ts";
+} from "./ReactWorkTags";
+import { RootState } from "./ReactFiberRoot";
+import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
+import { PerformedWork } from "./ReactFiberFlags";
+import { renderWithHooks } from "./ReactFiberHooks";
 import {
 	adoptClassInstance,
 	constructClassInstance,
 	mountClassInstance,
-} from "./ReactFiberClassComponent.ts";
+} from "./ReactFiberClassComponent";
 
 function markRef(current: Fiber | null, workInProgress: Fiber) {
 	// TOOD 涉及到Ref相关内容在实现

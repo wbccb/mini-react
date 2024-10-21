@@ -9,12 +9,10 @@
     ".": "./index.ts"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build --watch",
-    "preview": "vite preview"
+    "build:esm": "tsc --module esnext --target es5 --outDir ./es",
+    "build:cjs": "tsc --module commonjs --target es5 --outDir ./lib"
   },
   "dependencies": {
-    "react-dom": "workspace:*",
     "react-reconciler": "workspace:*"
   },
   "devDependencies": {

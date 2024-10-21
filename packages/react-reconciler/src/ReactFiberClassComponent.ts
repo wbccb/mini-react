@@ -1,6 +1,6 @@
-import { Fiber } from "./ReactInternalTypes.ts";
-import { Lanes } from "./ReactFiberLane.ts";
-import { LayoutStatic, Update } from "./ReactFiberFlags.ts";
+import { Fiber } from "./ReactInternalTypes";
+import { Lanes } from "./ReactFiberLane";
+import { LayoutStatic, Update } from "./ReactFiberFlags";
 
 const classComponentUpdater = {
 	isMounted() {},

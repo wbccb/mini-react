@@ -31,3 +31,9 @@ temp.*
 
 TOTD.md
 **/TODO.md
+
+
+lib
+es
+dist
+.turbo

@@ -1,5 +1,5 @@
-import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
-import { Lanes } from "./ReactFiberLane.ts";
+import { Fiber, FiberRoot } from "./ReactInternalTypes";
+import { Lanes } from "./ReactFiberLane";
 import {
 	BeforeMutationMask,
 	Hydrating,
@@ -10,14 +10,8 @@ import {
 	Ref,
 	Snapshot,
 	Update,
-} from "./ReactFiberFlags.ts";
-import {
-	DehydratedFragment,
-	HostComponent,
-	HostPortal,
-	HostRoot,
-	HostText,
-} from "./ReactWorkTags.ts";
+} from "./ReactFiberFlags";
+import { DehydratedFragment, HostComponent, HostPortal, HostRoot, HostText } from "./ReactWorkTags";
 
 let nextEffect: Fiber | null = null;
 

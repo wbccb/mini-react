@@ -1,8 +1,6 @@
-// @ts-ignore
-import type { Fiber } from "react-reconciler/src/ReactInternalTypes";
-// @ts-ignore
-import { DefaultEventPriority } from "react-reconciler/src/ReactEventPriorities.ts";
-import { DOMEventName, getEventPriority } from "../events/ReactDOMEventListener.ts";
+import type { Fiber } from "react-reconciler";
+import { DefaultEventPriority } from "react-reconciler";
+import { DOMEventName, getEventPriority } from "../events/ReactDOMEventListener";
 
 export interface Container {
 	internalContainerInstanceKey: Fiber;

@@ -1,5 +1,5 @@
-import { FiberNode } from "./ReactFiber.ts";
-import { FiberRootNode } from "./ReactFiberRoot.ts";
+import { FiberNode } from "./ReactFiber";
+import { FiberRootNode } from "./ReactFiberRoot";
 
 export type FiberRoot = FiberRootNode;
 

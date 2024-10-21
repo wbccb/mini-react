@@ -1,21 +1,45 @@
-import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
+import { Fiber, FiberRoot } from "./ReactInternalTypes";
 import {
-	SharedQueue,
 	State,
-	Update,
-	UpdateQueue,
-} from "./ReactFiberClassUpdateQueue.ts";
-import { Lane, Lanes, mergeLanes, NoLanes } from "./ReactFiberLane.ts";
-import { HostRoot } from "./ReactWorkTags.ts";
+	FiberClassUpdate,
+	FiberClassUpdateQueue,
+	SharedQueue,
+} from "./ReactFiberClassUpdateQueue";
+import { Lane, Lanes, mergeLanes, NoLanes } from "./ReactFiberLane";
+import { HostRoot } from "./ReactWorkTags";
+import type { FiberUpdate, FiberUpdateQueue } from "./ReactFiberHooks";
+
+export type ConcurrentUpdate = {
+	next: ConcurrentUpdate;
+	lane: Lane;
+};
+type ConcurrentQueue = {
+	pending: ConcurrentUpdate | null;
+};
 
 function enqueueConcurrentClassUpdate(
 	fiber: Fiber,
-	queue: SharedQueue<State>,
-	update: Update<any>,
+	queue: SharedQueue<any>,
+	update: FiberClassUpdate<any>,
 	lane: Lane,
 ): FiberRoot | null {
-	enqueueUpdate(fiber, queue, update, lane);
+	// 注：react源码就是这样强制转化的
+	const concurrentQueue: any = queue;
+	const concurrentUpdate: ConcurrentUpdate = update as ConcurrentUpdate;
+	enqueueUpdate(fiber, concurrentQueue, concurrentUpdate, lane);
 	return getRootForUpdatedFiber(fiber); // 返回FiberRootNode
+}
+
+export function enqueueConcurrentHookUpdate<S, A>(
+	fiber: Fiber,
+	queue: FiberUpdateQueue<S, A>,
+	update: FiberUpdate<S, A>,
+	lane: Lane,
+): FiberRoot | null {
+	const concurrentQueue: any = queue;
+	const concurrentUpdate: ConcurrentUpdate = update as ConcurrentUpdate;
+	enqueueUpdate(fiber, concurrentQueue, concurrentUpdate, lane);
+	return getRootForUpdatedFiber(fiber);
 }
 
 const concurrentQueues: Array<any> = [];
@@ -25,8 +49,8 @@ let concurrentlyUpdatedLanes: Lanes = NoLanes;
 // 这里的enqueueUpdate跟ReactFiberClassUpdateQueue的enqueueUpdate不一样
 function enqueueUpdate(
 	fiber: Fiber,
-	queue: SharedQueue<State>,
-	update: Update<State>,
+	queue: ConcurrentQueue | null,
+	update: ConcurrentUpdate | null,
 	lane: Lane,
 ) {
 	concurrentQueues[concurrentQueuesIndex++] += fiber;
@@ -55,10 +79,10 @@ function finishQueueingConcurrentUpdates() {
 		const fiber: Fiber = concurrentQueues[i];
 		concurrentQueues[i++] = null;
 
-		const updateQueueShared: SharedQueue<State> = concurrentQueues[i];
+		const updateQueueShared: ConcurrentQueue = concurrentQueues[i];
 		concurrentQueues[i++] = null;
 
-		const update: Update<State> = concurrentQueues[i];
+		const update: ConcurrentUpdate = concurrentQueues[i];
 		concurrentQueues[i++] = null;
 
 		const lane: Lane = concurrentQueues[i];

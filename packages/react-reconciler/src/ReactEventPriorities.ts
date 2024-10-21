@@ -8,7 +8,7 @@ import {
 	Lanes,
 	NoLane,
 	SyncLane,
-} from "./ReactFiberLane.ts";
+} from "./ReactFiberLane";
 
 export type EventPriority = Lane;
 
@@ -21,10 +21,7 @@ let currentUpdatePriority: EventPriority = NoLane;
 export function getCurrentUpdatePriority(): EventPriority {
 	return currentUpdatePriority;
 }
-export function isHigherEventPriority(
-	a: EventPriority,
-	b: EventPriority,
-): boolean {
+export function isHigherEventPriority(a: EventPriority, b: EventPriority): boolean {
 	return a !== 0 && a < b;
 }
 export function lanesToEventPriority(lanes: Lanes): EventPriority {

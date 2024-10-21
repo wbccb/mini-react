@@ -2,8 +2,7 @@ import {
 	ContinuousEventPriority,
 	DefaultEventPriority,
 	DiscreteEventPriority,
-	// @ts-ignore
-} from "react-reconciler/src/ReactEventPriorities";
+} from "react-reconciler";
 
 export type DOMEventName =
 	| "abort"

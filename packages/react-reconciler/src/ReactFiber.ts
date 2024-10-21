@@ -1,4 +1,4 @@
-import { ConcurrentRoot, RootTag } from "./ReactRootTags.ts";
+import { ConcurrentRoot, RootTag } from "./ReactRootTags";
 import {
 	ClassComponent,
 	HostComponent,
@@ -6,13 +6,13 @@ import {
 	HostText,
 	IndeterminateComponent,
 	WorkTag,
-} from "./ReactWorkTags.ts";
-import { State, UpdateQueue } from "./ReactFiberClassUpdateQueue.ts";
-import { ConcurrentMode, NoMode, TypeOfMode } from "./ReactTypeOfMode.ts";
-import { Lanes, NoLanes } from "./ReactFiberLane.ts";
-import { Flags, NoFlags } from "./ReactFiberFlags.ts";
+} from "./ReactWorkTags";
+import { State, FiberClassUpdateQueue } from "./ReactFiberClassUpdateQueue";
+import { ConcurrentMode, NoMode, TypeOfMode } from "./ReactTypeOfMode";
+import { Lanes, NoLanes } from "./ReactFiberLane";
+import { Flags, NoFlags } from "./ReactFiberFlags";
 import { ReactElement } from "shared";
-import { Fiber } from "./ReactInternalTypes.ts";
+import { Fiber } from "./ReactInternalTypes";
 
 export function createHostRootFiber(tag: RootTag) {
 	let mode;
@@ -57,7 +57,7 @@ function createFiberFromTypeAndProps(
 	let fiberTag: WorkTag = IndeterminateComponent;
 	// 根据type的值去设置fiberTag的值
 	if (typeof type === "function") {
-		if(shouldConstruct(type)) {
+		if (shouldConstruct(type)) {
 			// FunctionComponent初始设置tag=IndeterminateComponent
 			fiberTag = ClassComponent;
 		}
@@ -82,7 +82,7 @@ class FiberNode {
 	tag: WorkTag;
 	stateNode: any;
 	memoizedState: any;
-	updateQueue: UpdateQueue<State> | null;
+	updateQueue: FiberClassUpdateQueue<State> | null;
 	mode: TypeOfMode;
 	elementType: any;
 	type: any;

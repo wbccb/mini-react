@@ -1,15 +1,9 @@
-import { Fiber } from "./ReactInternalTypes.ts";
-import { RootTag } from "./ReactRootTags.ts";
-import { createHostRootFiber } from "./ReactFiber.ts";
-import { initializeUpdateQueue } from "./ReactFiberClassUpdateQueue.ts";
-import {
-	createLaneMap,
-	Lane,
-	Lanes,
-	NoLane,
-	NoLanes,
-} from "./ReactFiberLane.ts";
-import { NoTimestamp } from "./ReactFiberWorkLoop.ts";
+import { Fiber } from "./ReactInternalTypes";
+import { RootTag } from "./ReactRootTags";
+import { createHostRootFiber } from "./ReactFiber";
+import { initializeUpdateQueue } from "./ReactFiberClassUpdateQueue";
+import { createLaneMap, Lane, Lanes, NoLane, NoLanes } from "./ReactFiberLane";
+import { NoTimestamp } from "./ReactFiberWorkLoop";
 
 export type RootState = {
 	element: any;
@@ -57,6 +51,8 @@ function createFiberRoot(container: any, tag: RootTag) {
 	root.current = rootFiber;
 	rootFiber.stateNode = root;
 
+	// TODO 完善这个初始化
+	// @ts-ignore
 	var initialState: RootState = {};
 	rootFiber.memoizedState = initialState;
 

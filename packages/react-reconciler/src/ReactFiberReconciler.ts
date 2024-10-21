@@ -1,14 +1,14 @@
-import { Fiber, FiberRoot } from "./ReactInternalTypes.ts";
-import { ConcurrentRoot } from "./ReactRootTags.ts";
-import { createFiberRoot } from "./ReactFiberRoot.ts";
+import { Fiber, FiberRoot } from "./ReactInternalTypes";
+import { ConcurrentRoot } from "./ReactRootTags";
+import { createFiberRoot } from "./ReactFiberRoot";
 import type { ReactNodeList } from "shared";
-import { requestEventTime, requestUpdateLane } from "./ReactFiberWorkLoop.ts";
+import { requestEventTime, requestUpdateLane } from "./ReactFiberWorkLoop";
 import {
 	createUpdate,
 	enqueueUpdate,
 	scheduleUpdateOnFiber,
 	entangleTransitions,
-} from "./ReactFiberClassUpdateQueue.ts";
+} from "./ReactFiberClassUpdateQueue";
 
 function createContainer(container: any): FiberRoot {
 	const tag = ConcurrentRoot;
