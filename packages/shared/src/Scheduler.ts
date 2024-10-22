@@ -118,8 +118,8 @@ function scheduleCallback(priorityLevel: Lane, callback: any, options?: { delay:
 let scheduledHostCallback: ((currentTime: number) => boolean) | null = null;
 function requestHostCallback(flushWork: (initTime: number) => boolean) {
 	scheduledHostCallback = flushWork;
-	if (!isHostCallbackScheduled) {
-		isHostCallbackScheduled = true;
+	if (!isMessageLoopRunning) {
+		isMessageLoopRunning = true;
 		schedulePerformWorkUntilDeadline();
 	}
 }
@@ -127,10 +127,7 @@ function requestHostCallback(flushWork: (initTime: number) => boolean) {
 const channel = new MessageChannel();
 channel.port1.onmessage = performWorkUntilDeadline;
 function schedulePerformWorkUntilDeadline() {
-	if (!isMessageLoopRunning) {
-		isMessageLoopRunning = true;
-		channel.port2.postMessage(null);
-	}
+	channel.port2.postMessage(null);
 }
 function performWorkUntilDeadline() {
 	// Mark: 我觉得下面这种情况不太可能会发生，源码中只处理isMessageLoopRunning，没处理isHostCallbackScheduled
@@ -160,10 +157,6 @@ function performWorkUntilDeadline() {
 }
 
 function flushWork(initTime: number): boolean {
-	if (!isPerformingWork) {
-		return false;
-	}
-
 	isHostCallbackScheduled = false;
 	isPerformingWork = true;
 	const previousPriorityLevel = currentPriorityLevel;
