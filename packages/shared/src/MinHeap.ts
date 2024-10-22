@@ -1,4 +1,5 @@
-import { Lane, NoLane } from "react-reconciler";
+type Lane = number;
+const NoLane: Lane = /*                          */ 0b0000000000000000000000000000000;
 
 type Heap = Array<Node>;
 interface Task {
@@ -79,16 +80,10 @@ class MinHeap {
 			const leftIndex = this.getChildLeft(current);
 			const rightIndex = this.getChildRight(current);
 			let tempIndex = current;
-			if (
-				leftIndex <= this.size &&
-				this.array[leftIndex] < this.array[tempIndex]
-			) {
+			if (leftIndex <= this.size && this.array[leftIndex] < this.array[tempIndex]) {
 				tempIndex = leftIndex;
 			}
-			if (
-				rightIndex <= this.size &&
-				this.array[rightIndex] < this.array[tempIndex]
-			) {
+			if (rightIndex <= this.size && this.array[rightIndex] < this.array[tempIndex]) {
 				tempIndex = rightIndex;
 			}
 			if (tempIndex === current) {

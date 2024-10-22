@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      turbo:
-        specifier: ^2.2.1
-        version: 2.2.1
     devDependencies:
       eslint-config-prettier:
         specifier: ^9.1.0
@@ -24,6 +20,9 @@ importers:
       prettier:
         specifier: ^3.3.3
         version: 3.3.3
+      turbo:
+        specifier: ^2.2.1
+        version: 2.2.1
 
   examples:
     dependencies:
@@ -117,9 +116,6 @@ importers:
 
   packages/shared:
     dependencies:
-      react-dom:
-        specifier: workspace:*
-        version: link:../react-dom
       react-reconciler:
         specifier: workspace:*
         version: link:../react-reconciler

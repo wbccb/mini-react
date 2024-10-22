@@ -1,7 +1,9 @@
-const path = require("path");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-
-module.exports = {
+import path from "path";
+import HtmlWebpackPlugin from "html-webpack-plugin";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+export default {
 	entry: path.resolve(__dirname, "../src/index.tsx"),
 	output: {
 		path: path.resolve(__dirname, "../dist"), // 打包后的代码放在dist目录下
@@ -15,7 +17,7 @@ module.exports = {
 	],
 	resolve: {
 		// 配置 extensions 来告诉 webpack 在没有书写后缀时，以什么样的顺序去寻找文件
-		extensions: [".mjs", ".js", ".json", ".jsx", ".ts", ".tsx"], // 如果项目中只有 tsx 或 ts 可以将其写在最前面
+		extensions: [".ts", ".tsx", ".mjs", ".js", ".json", ".jsx"], // 如果项目中只有 tsx 或 ts 可以将其写在最前面
 	},
 	module: {
 		rules: [

@@ -1,4 +1,3 @@
-import { Lane } from "react-reconciler";
 import {
 	IdlePriority,
 	ImmediatePriority,
@@ -13,6 +12,7 @@ import {
 } from "./SchedulerPriorities";
 import { MinHeap, Task } from "./MinHeap";
 
+type Lane = number;
 let getCurrentTime: () => number;
 const hasPerformanceNow = typeof performance === "object" && typeof performance.now === "function";
 

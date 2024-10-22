@@ -1,6 +1,7 @@
-const { merge } = require('webpack-merge')
-const base = require('./webpack.base.js')
-
-module.exports = merge(base, {
-    mode: 'production', // 生产模式
-})
+import { merge } from "webpack-merge";
+import base from "./webpack.base.js";
+export default {
+	...merge(base, {
+		mode: "production", // 开发模式
+	}),
+};
