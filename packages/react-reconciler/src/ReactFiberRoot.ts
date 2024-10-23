@@ -53,7 +53,9 @@ function createFiberRoot(container: any, tag: RootTag) {
 
 	// TODO 完善这个初始化
 	// @ts-ignore
-	var initialState: RootState = {};
+	var initialState: RootState = {
+		element: null,
+	};
 	rootFiber.memoizedState = initialState;
 
 	initializeUpdateQueue(rootFiber);

@@ -79,10 +79,24 @@ function entangleTransitions(root: FiberRoot, fiber: Fiber, lane: Lane) {
 	// TODO 并发时再实现
 }
 
+function processUpdateQueue(workInProgress: Fiber, props: any, instance: any, renderLanes: Lanes) {
+	const queue = workInProgress.updateQueue as FiberClassUpdateQueue<State>;
+	let pendingQueue = queue.shared.pending;
+	if (pendingQueue !== null) {
+		// 经过enqueuQueue压入队列
+		// finishQueueingConcurrentUpdates进行queue.pending的构建，赋值给fiber.queue
+		// 获取fiber.queue.shared.pending，然后构建出children数据
+		// TODO 实现提取逻辑，需要简化原来的react代码
+		let newState = queue.shared.pending?.payload;
+		workInProgress.memoizedState = newState;
+	}
+}
+
 export {
 	initializeUpdateQueue,
 	createUpdate,
 	enqueueUpdate,
 	scheduleUpdateOnFiber,
 	entangleTransitions,
+	processUpdateQueue,
 };

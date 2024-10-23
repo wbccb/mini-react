@@ -18,6 +18,7 @@ import {
 	constructClassInstance,
 	mountClassInstance,
 } from "./ReactFiberClassComponent";
+import { processUpdateQueue } from "./ReactFiberClassUpdateQueue";
 
 function markRef(current: Fiber | null, workInProgress: Fiber) {
 	// TOOD 涉及到Ref相关内容在实现
@@ -89,7 +90,10 @@ function updateHostRoot(
 	// const prevState = workInProgress.memoizedState;
 	// const prevChildren = prevState.element;
 	// cloneUpdateQueue(current, workInProgress);
-	// processUpdateQueue(workInProgress, nextProps, null, renderLanes);
+	const nextProps = workInProgress.pendingProps;
+	// TODO 提取队列的update生成memoizedState对象
+	// 将workInProgress的updateQueue.shared.pending提取出来塞到memoizedState
+	processUpdateQueue(workInProgress, nextProps, null, renderLanes);
 	const nextState: RootState = workInProgress.memoizedState;
 	const nextChildren = nextState.element;
 

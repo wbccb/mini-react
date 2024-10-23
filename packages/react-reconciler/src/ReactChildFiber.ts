@@ -116,15 +116,16 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		}
 
 		const childString = Object.prototype.toString.call(newChild);
-		throw new Error(
-			`Objects are not valid as a React child (found: ${
-				childString === "[object Object]"
-					? "object with keys {" + Object.keys(newChild).join(", ") + "}"
-					: childString
-			}). ` +
-				"If you meant to render a collection of children, use an array " +
-				"instead.",
-		);
+		// throw new Error(
+		// 	`Objects are not valid as a React child (found: ${
+		// 		childString === "[object Object]"
+		// 			? "object with keys {" + Object.keys(newChild).join(", ") + "}"
+		// 			: childString
+		// 	}). ` +
+		// 		"If you meant to render a collection of children, use an array " +
+		// 		"instead.",
+		// );
+		return null;
 	}
 
 	return reconcileChildFibers;

@@ -19,11 +19,12 @@ function updateContainer(element: ReactNodeList, container: FiberRoot) {
 	console.error("updateContainer", element, container);
 
 	const current: Fiber = container.current as Fiber;
+	current.memoizedState = { element };
 	const eventTime = requestEventTime();
 
 	const lane = requestUpdateLane(current!); // 获取Fiber的lane
 	const update = createUpdate(eventTime, lane); // 根据lane创建update
-	update.payload = {};
+	update.payload = { element };
 
 	const root = enqueueUpdate(current, update, lane); // 将fiber对应的update放入到队列中
 	if (root !== null) {

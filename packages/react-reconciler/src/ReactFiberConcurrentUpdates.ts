@@ -24,6 +24,7 @@ function enqueueConcurrentClassUpdate(
 	lane: Lane,
 ): FiberRoot | null {
 	// 注：react源码就是这样强制转化的
+	// TODO 将update压入队列中
 	const concurrentQueue: any = queue;
 	const concurrentUpdate: ConcurrentUpdate = update as ConcurrentUpdate;
 	enqueueUpdate(fiber, concurrentQueue, concurrentUpdate, lane);
@@ -53,10 +54,10 @@ function enqueueUpdate(
 	update: ConcurrentUpdate | null,
 	lane: Lane,
 ) {
-	concurrentQueues[concurrentQueuesIndex++] += fiber;
-	concurrentQueues[concurrentQueuesIndex++] += queue;
-	concurrentQueues[concurrentQueuesIndex++] += update;
-	concurrentQueues[concurrentQueuesIndex++] += lane;
+	concurrentQueues[concurrentQueuesIndex++] = fiber;
+	concurrentQueues[concurrentQueuesIndex++] = queue;
+	concurrentQueues[concurrentQueuesIndex++] = update;
+	concurrentQueues[concurrentQueuesIndex++] = lane;
 
 	// 进行fiber.lanes的多种merge
 	concurrentlyUpdatedLanes = mergeLanes(concurrentlyUpdatedLanes, lane);
@@ -73,7 +74,7 @@ function finishQueueingConcurrentUpdates() {
 	// 这里的concurrentQueuesIndex就是enqueueUpdate()的赋值
 	const endIndex = concurrentQueuesIndex;
 	concurrentQueuesIndex = 0;
-
+	debugger;
 	let i = 0;
 	while (i < endIndex) {
 		const fiber: Fiber = concurrentQueues[i];
