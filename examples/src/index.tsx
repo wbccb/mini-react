@@ -3,4 +3,10 @@ import { createRoot } from "react-dom/client";
 
 const domNode = document.getElementById("root");
 const root = createRoot(domNode!);
-root.render(<div></div>);
+root.render(
+	<div>
+		<span>
+			<input />
+		</span>
+	</div>,
+);
