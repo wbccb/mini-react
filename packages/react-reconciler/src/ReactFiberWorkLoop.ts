@@ -282,6 +282,8 @@ function performUnitOfWork(unitOfWork: Fiber) {
 	let current = unitOfWork.alternate;
 	let next = beginWork(current, unitOfWork, subtreeRenderLanes);
 
+	console.warn("beginWork得到的workInProgress.child", next);
+
 	unitOfWork.memoizedProps = unitOfWork.pendingProps;
 
 	if (next === null) {
@@ -309,9 +311,8 @@ function completeUnitOfWork(unitOfWork: Fiber) {
 			workInProgress = next;
 			return;
 		}
-
-		if (unitOfWork.sibling) {
-			workInProgress = unitOfWork.sibling;
+		if (completedWork.sibling) {
+			workInProgress = completedWork.sibling;
 			return;
 		}
 

@@ -104,6 +104,8 @@ class FiberNode {
 
 	index: number;
 
+	$$typeof?: Symbol;
+
 	constructor(tag: WorkTag, pendingProps: any, key: string | null, mode: TypeOfMode) {
 		this.tag = tag;
 		this.mode = mode;
