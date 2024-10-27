@@ -1,6 +1,7 @@
 import { ConcurrentRoot, RootTag } from "./ReactRootTags";
 import {
 	ClassComponent,
+	Fragment,
 	HostComponent,
 	HostRoot,
 	HostText,
@@ -11,7 +12,7 @@ import { State, FiberClassUpdateQueue } from "./ReactFiberClassUpdateQueue";
 import { ConcurrentMode, NoMode, TypeOfMode } from "./ReactTypeOfMode";
 import { Lanes, NoLanes } from "./ReactFiberLane";
 import { Flags, NoFlags } from "./ReactFiberFlags";
-import { ReactElement } from "shared";
+import { REACT_FRAGMENT_TYPE, ReactElement } from "shared";
 import { Fiber } from "./ReactInternalTypes";
 
 export function createHostRootFiber(tag: RootTag) {
@@ -39,7 +40,7 @@ function createFiberFromText(content: string, mode: TypeOfMode, lanes: Lanes) {
 function createFiberFromElement(element: ReactElement, mode: TypeOfMode, lanes: Lanes) {
 	const type = element.type;
 	const key = element.key;
-	const pendingProps = element.props;
+	const pendingProps = element.props; // 本质就是jsx自动解析出来的children数据，就是jsx.props里面自己就带了children数据，不是react自己去转化
 
 	const fiber = createFiberFromTypeAndProps(type, key, pendingProps, element._owner, mode, lanes);
 
@@ -63,6 +64,8 @@ function createFiberFromTypeAndProps(
 		}
 	} else if (typeof type === "string") {
 		fiberTag = HostComponent;
+	} else if (type === REACT_FRAGMENT_TYPE) {
+		fiberTag = Fragment;
 	}
 	// TODO 还有很多fiberTag没识别，后续在识别
 

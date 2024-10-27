@@ -74,7 +74,6 @@ function finishQueueingConcurrentUpdates() {
 	// 这里的concurrentQueuesIndex就是enqueueUpdate()的赋值
 	const endIndex = concurrentQueuesIndex;
 	concurrentQueuesIndex = 0;
-	debugger;
 	let i = 0;
 	while (i < endIndex) {
 		const fiber: Fiber = concurrentQueues[i];

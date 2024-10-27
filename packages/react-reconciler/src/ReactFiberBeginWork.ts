@@ -95,7 +95,7 @@ function updateHostRoot(
 	// 将workInProgress的updateQueue.shared.pending提取出来塞到memoizedState
 	processUpdateQueue(workInProgress, nextProps, null, renderLanes);
 	const nextState: RootState = workInProgress.memoizedState;
-	const nextChildren = nextState.element;
+	const nextChildren = nextState.element; //element本质就是jsx解析出来的children数据
 
 	reconcileChildren(current, workInProgress, nextChildren, renderLanes);
 
@@ -128,7 +128,7 @@ function updateFragment(
 	workInProgress: Fiber,
 	renderLanes: Lanes,
 ): Fiber | null {
-	const newNextChildren = workInProgress.pendingProps;
+	const newNextChildren = workInProgress.pendingProps.children;
 	reconcileChildren(current, workInProgress, newNextChildren, renderLanes);
 	return workInProgress.child;
 }

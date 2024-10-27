@@ -108,6 +108,7 @@ function commitPlacement(finishedWork: Fiber) {
 	//!!!!看清楚是parentFiber.tag，不是fiber.tag
 	switch (parentFiber.tag) {
 		case HostRoot:
+			debugger;
 			const _parent: Element = parentFiber.stateNode.containerInfo; // 根Fiber的DOM存放比较特殊
 			const _before = getHostSibling(finishedWork);
 			insertOrAppendPlacementNodeIntoContainer(finishedWork, _before, _parent);
@@ -147,26 +148,33 @@ function getHostSibling(fiber: Fiber) {
 			if (node.return === null || isHostParent(node.return)) {
 				return null;
 			}
+			// 如果没有node.sibling，并且node.return是一个不具备stateNode的，那么我们就试着找node.return.sibling
 			node = node.return;
 		}
 
+		// 试着找node.sibling
 		node.sibling.return = node.return;
 		node = node.sibling;
 
-		// 找到node.sibling: 我们得判断是不是isHost(node.sibling) && 不具备Placement标记
+		// 找到node.sibling: 如果node.sibling不具备DOM
 		while (node.tag !== HostComponent && node.tag !== HostText && node.tag !== DehydratedFragment) {
+			// 判断node.sibling.children能不能用？
+
+			// 首先得满足不具备Placement标记
 			if (node.flags && Placement) {
 				// 不能继续往下找它的child，因为它自己本身都不稳定
 				continue siblings;
 			}
+			// 如果node.child为空
 			if (node.child === null || node.tag === HostPortal) {
 				continue siblings;
 			}
-
+			// node.child满足题意，将当前node换成node.child
 			node.child.return = node;
 			node = node.child;
 		}
 
+		// 检查当前node是否Placement，如果有，则继续循环找nde.sibling
 		if (!(node.flags && Placement)) {
 			return node.stateNode;
 		}
