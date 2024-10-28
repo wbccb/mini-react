@@ -3,6 +3,7 @@ import { Lanes, mergeLanes, NoLane, NoLanes } from "./ReactFiberLane";
 import {
 	ClassComponent,
 	Fragment,
+	FunctionComponent,
 	HostComponent,
 	HostRoot,
 	HostText,
@@ -41,6 +42,7 @@ function completeWork(
 			bubbleProperties(workInProgress);
 			return null;
 		}
+		case FunctionComponent:
 		case IndeterminateComponent:
 		case Fragment:
 		case ClassComponent: {

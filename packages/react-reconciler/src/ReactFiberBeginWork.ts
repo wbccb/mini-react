@@ -139,7 +139,7 @@ function mountIndeterminateComponent(
 	Component: any, // workInProgress.type
 	renderLanes: Lanes,
 ): Fiber | null {
-	const props = workInProgress.pendingProps;
+	const props = workInProgress.pendingProps; // 在createFiberFromElement()中获取fiber.props赋值给pendingProps，其中fiber.props是jsx自动解析获取的props数据
 	const value: any = renderWithHooks(null, workInProgress, Component, props, renderLanes);
 
 	workInProgress.flags |= PerformedWork;

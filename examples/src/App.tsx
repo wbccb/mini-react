@@ -1,5 +1,5 @@
-const App = () => {
-  return <div>测试</div>
-}
+const App = ({ testProps }: { testProps: string }) => {
+	return <span>{testProps}</span>;
+};
 
-export default App
+export default App;
