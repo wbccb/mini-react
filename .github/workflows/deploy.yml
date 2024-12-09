@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ./docs 
-          pnpm install --frozen-lockfile
+          pnpm install
       - name: Build monorepo-docs-website
         run: |
           echo ${{ github.workspace }}  # 输出工作区上下文路径，就是工程路径
