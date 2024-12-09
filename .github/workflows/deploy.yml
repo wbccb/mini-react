@@ -1,0 +1,28 @@
+name: mini-react
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master # If you're using actions/checkout@v2 you must set persist-credentials to false in most cases for the deployment to work correctly.
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.15.1'
+      - name: Install and Build
+        run: |
+          pnpm install
+          pnpm run build
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          ACCESS_TOKEN: ${{ secrets.GITHUBPAGE }}
+          BRANCH: gh-pages
+          FOLDER: dist
+          BUILD_SCRIPT: pnpm install && pnpm run build

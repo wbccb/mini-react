@@ -1,0 +1,17 @@
+{
+  "name": "mini-react",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vitepress dev ../docs",
+    "build": "vitepress build ../docs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vitepress": "^1.5.0"
+  },
+  "packageManager": "pnpm@9.5.0"
+}
