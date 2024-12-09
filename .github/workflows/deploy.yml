@@ -2,7 +2,7 @@ name: mini-react
 on:
   push:
     branches:
-      - main
+      - test
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
