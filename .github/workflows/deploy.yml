@@ -1,28 +1,41 @@
-name: mini-react
+name: Deploy to GitHub Pages
+
 on:
   push:
     branches:
       - test
+
 jobs:
-  build-and-deploy:
+  deploy:
+    name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@master # If you're using actions/checkout@v2 you must set persist-credentials to false in most cases for the deployment to work correctly.
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
         with:
-          persist-credentials: false
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+          version: 8
+      - uses: actions/setup-node@v3
         with:
-          node-version: '20.15.1'
-      - name: Install and Build
+          node-version: '20'
+          cache: 'pnpm'
+      - name: Install dependencies
         run: |
-          pnpm install
-          pnpm run build
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
+          cd ./docs 
+          pnpm install --frozen-lockfile
+      - name: Build monorepo-docs-website
+        run: |
+          echo ${{ github.workspace }}  # 输出工作区上下文路径，就是工程路径
+          cd ./docs 
+          pnpm build
+
+      # Popular action to deploy to GitHub Pages:
+      # Docs: https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-docusaurus
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          ACCESS_TOKEN: ${{ secrets.GITHUBPAGE }}
-          BRANCH: gh-pages
-          FOLDER: dist
-          BUILD_SCRIPT: pnpm install && pnpm run build
+          github_token: ${{ secrets.GITHUBPAGE }}
+          # Build output to publish to the `gh-pages` branch:
+          publish_dir: ./docs/dist # 文档打包产物的目录名就是build
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: ${{ github.event.head_commit.message }}
