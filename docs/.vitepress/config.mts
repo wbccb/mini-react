@@ -47,12 +47,12 @@ export default defineConfig({
 				text: "源码解析",
 				items: [
 					{
-						text: "render&commit阶段",
-						link: "/3-源码解析/hooks&更新渲染流程分析",
-					},
-					{
 						text: "首次渲染流程分析",
 						link: "/3-源码解析/首次渲染流程分析",
+					},
+					{
+						text: "hooks&更新渲染流程分析",
+						link: "/3-源码解析/hooks&更新渲染流程分析",
 					},
 				],
 			},
