@@ -37,3 +37,6 @@ lib
 es
 dist
 .turbo
+
+docs/.vitepress/dist
+docs/.vitepress/cache
