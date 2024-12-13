@@ -5,7 +5,7 @@ export default defineConfig({
 	base: "/mini-react/",
 	title: "React18源码分析",
 	description: "",
-	appearance: "dark",
+	appearance: "force-dark",
 	themeConfig: {
 		// https://vitepress.dev/reference/default-theme-config
 		nav: [{ text: "Home", link: "https://github.com/wbccb/mini-react" }],
