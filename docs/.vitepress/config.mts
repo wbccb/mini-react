@@ -5,10 +5,14 @@ export default defineConfig({
 	base: "/mini-react/",
 	title: "React18源码分析",
 	description: "",
-	appearance: "force-dark",
+	appearance: "dark",
 	themeConfig: {
 		// https://vitepress.dev/reference/default-theme-config
 		nav: [{ text: "Home", link: "https://github.com/wbccb/mini-react" }],
+
+		outline: {
+			label: "页面导航",
+		},
 
 		sidebar: [
 			{
@@ -48,11 +52,15 @@ export default defineConfig({
 				text: "源码解析",
 				items: [
 					{
-						text: "首次渲染流程分析",
-						link: "/3-源码解析/首次渲染流程分析",
+						text: "(WIP)首次渲染流程分析(一)",
+						link: "/3-源码解析/(WIP)首次渲染流程分析(一)",
 					},
 					{
-						text: "hooks&更新渲染流程分析",
+						text: "(WIP)首次渲染流程分析(二)",
+						link: "/3-源码解析/(WIP)首次渲染流程分析(二)",
+					},
+					{
+						text: "(WIP)hooks&更新渲染流程分析",
 						link: "/3-源码解析/hooks&更新渲染流程分析",
 					},
 				],
