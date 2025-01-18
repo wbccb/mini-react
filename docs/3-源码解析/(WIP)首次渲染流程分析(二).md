@@ -3,7 +3,7 @@ outline: [1, 6]
 ---
 
 
-# HostRoot & HostComponent举例分析
+# 1. HostRoot & HostComponent举例分析
 当我们使用下面的测试代码时，涉及到有
 
 + `HostRoot`：根类型，代表的是`#root`
@@ -21,7 +21,7 @@ root.render(
 );
 ```
 
-## HostRoot-beginWork
+## 1.1 HostRoot-beginWork
 触发的是`updateHostRoot()`方法，直接触发的就是`reconcileChildren()`
 
 ```javascript
@@ -69,7 +69,7 @@ function reconcileChildren(current, workInProgress, nextChildren, renderLanes) {
 ```
 
 > 那为什么`current`不为空呢？
->
+
 
 从下面`performUnitOfWork()`可以知道，`current`就是`fiber.alternate`，而根`fiber`的早期的准备中，就已经触发`createWorkInProgress()`进行`fiber.alternate`的构建（只有根`fiber`才有如此待遇！）
 
@@ -129,7 +129,7 @@ function ChildReconciler(shouldTrackSideEffects) {
 }
 ```
 
-### reconcileSingleElement
+### 1.1.1 reconcileSingleElement
 直接根据上面`child`代码所展示的数据触发`createFiberFromElement()`进行`fiber`的构建，然后直接返回构建的`fiber`
 
 ```javascript
@@ -173,7 +173,7 @@ function createFiberFromElement(element, mode, lanes) {
 }
 ```
 
-### placeSingleChild
+### 1.1.2 placeSingleChild
 此时的`newFiber`是根`fiber`的`childFiber`，也就是`<div>`所代表的`fiber`，此时由于
 
 + `shouldTrackSideEffects`=`true`
@@ -191,7 +191,7 @@ function placeSingleChild(newFiber) {
 }
 ```
 
-### 总结
+### 1.1.3 总结
 回到`performUnitOfWork()`，此时`beginWork()`返回的就是`<div>`所对应的`fiber`，然后触发`workInProgress`=`next`，然后继续执行`beginWork()`，此时`fiber.tag`为`HostComponent`
 
 ```javascript
@@ -213,7 +213,7 @@ function performUnitOfWork(unitOfWork) {
 }
 ```
 
-## HostComponent-beginWork
+## 1.2 HostComponent-beginWork
 触发的是`updateHostComponent()`方法
 
 ```javascript
@@ -230,7 +230,6 @@ function beginWork(current, workInProgress, renderLanes) {
 从`fiber.pendingProps`中获取对应的`children`数据
 
 > `7.1.1 placeSingChild`中可以查看`fiber.pendingProps`具体的分析
->
 
 然后触发
 
@@ -362,7 +361,7 @@ function workLoopSync() {
 }
 ```
 
-## HostComponent-completeWork
+## 1.3 HostComponent-completeWork
 对于`HostComponent`，由于在`beginWork()`只是创建了`fiber`，并没有创建对应的`DOM`元素，因此`workInProgress.stateNode`=`null`
 
 
@@ -405,7 +404,7 @@ function completeWork(current, workInProgress, renderLanes) {
 }
 ```
 
-### appendAllChildren()
+### 1.3.1 appendAllChildren()
 从下面代码可以看出，有非常多层逻辑，涉及到多种`fiber.tag`，以及各种`child`和`sibling`的寻找，这其实涉及到`fiber.tag`=`Fragment`等多层级嵌套`DOM`
 
 的寻找，比如`<><><p></p></></>`，`p标签`需要不断向上寻找多层触发`dom.appendChild()`，这种情况将在后续进行分析
@@ -453,9 +452,9 @@ function appendInitialChild(parentInstance, child) {
 
 打印出来的数据结构如下图所示
 
-![](https://cdn.nlark.com/yuque/0/2024/png/35006532/1723284470536-e9c6da06-0376-4e00-8b2f-f656f2ac09cc.png)
+![](https://github.com/user-attachments/assets/699f72b4-5bd4-4bd8-a0c2-e4dcf9fb5c9d)
 
-### bubbleProperties()
+### 1.3.2 bubbleProperties()
 将`childrenFiber`相关的`lanes`和`flags`向上冒泡
 
 ```javascript
@@ -488,7 +487,7 @@ function bubbleProperties(completedWork) {
 }
 ```
 
-## HostRoot-completeWork
+## 1.4 HostRoot-completeWork
 由于我们初始化时`hydrated`=`false`，因此这里进行`Snapshot`标记
 
 然后触发`bubbleProperties()`，将`childrenFiber`相关的`lanes`和`flags`向上冒泡
@@ -514,16 +513,16 @@ function completeWork(current, workInProgress, renderLanes) {
 }
 ```
 
-## commit阶段
+## 1.5 commit阶段
 > 在上面对于`commit`阶段的分析中，我们知道会先处理`children`->`children.sibling`->`parent`->`finishedWork`
 >
 > 这里不再重复这个流程的代码逻辑，直接展示对应的执行方法
 >
 
-### HostComponent-commitBeforeMutationEffects()
+### 1.5.1 HostComponent-commitBeforeMutationEffects()
 无`Snapshot`标记，不处理
 
-### HostRoot-commitBeforeMutationEffects()
+### 1.5.2 HostRoot-commitBeforeMutationEffects()
 主要处理`Snapshot`标记，我们知道在`completeWork()`进行`Snapshot`标记，因此这里会触发`clearContainer()`进行`dom.textContent`的重置，会清空`#root`的所有`children`数据
 
 > 比如`<div id="divA">This is <span>some</span> text!</div>`，你可以用`textContent` 去获取该元素的文本内容：`This is some text!`
@@ -555,7 +554,7 @@ function clearContainer(container) {
 }
 ```
 
-### HostRoot-commitMutationEffects()
+### 1.5.3 HostRoot-commitMutationEffects()
 > 没有`Update`相关标记需要处理
 >
 
@@ -591,7 +590,7 @@ function commitReconciliationEffects(finishedWork) {
 }
 ```
 
-### HostComponent-commitMutationEffects()
+### 1.5.4 HostComponent-commitMutationEffects()
 除了由于`HostRoot`的第一层`children`触发`reconcileChildren()`时`shouldTrackSideEffects`=`true`，其他的时候触发`reconcileChildren()`时`shouldTrackSideEffects`=`false`，因此其它层级触发`commitMutationEffectsOnFiber()`时：
 
 + `recursivelyTraverseMutationEffects()`：`parentFiber.subtreeFlags & MutationMask`不符合，不触发深度继续遍历
@@ -666,7 +665,7 @@ function commitPlacement(finishedWork) {
 
 在我们这个示例中，就是触发`#root.appendChild(<div></div>)`，而我们在`HostComponent-completeWork()`中已经形成了`<div><span><p></p></span></div>`，因此整个DOM树就此构建完成！
 
-### commitLayoutEffects()
+### 1.5.5 commitLayoutEffects()
 处理`LayoutMask`，也就是`Update | Callback | Ref | Visibility`相关`flags`标记，本次示例中，没有相关相关`flags`标记，因此不做任何处理
 
 ```javascript
@@ -686,7 +685,7 @@ function commitLayoutEffectOnFiber(
 }
 ```
 
-# HostText举例分析
+# 2. HostText举例分析
 当我们使用下面的测试代码时，涉及到有
 
 + `HostRoot`：根类型，代表的是`#root`
@@ -697,14 +696,14 @@ function commitLayoutEffectOnFiber(
 const domNode = document.getElementById("root");
 const root = ReactDOM.createRoot(domNode);
 root.render(
-        <div id="parent">
-          <span>我是Child1</span>
-          Child2
-        </div>
+    <div id="parent">
+      <span>我是Child1</span>
+      Child2
+    </div>
 );
 ```
 
-## HostRoot-beginWork
+## 2.1 HostRoot-beginWork
 触发的是`updateHostRoot()`方法，直接触发的就是`reconcileChildren()`
 
 ```javascript
@@ -730,7 +729,7 @@ function updateHostRoot(current, workInProgress, renderLanes) {
 > 然后`beginWork`深度遍历，继续往下执行，目前`fiber`切换为`<div></div>`
 >
 
-## (div)HostComponent-beginWork
+## 2.2 (div)HostComponent-beginWork
 与`7.HostRoot&HostComponent举例分析`不同的是，此时的`fiber`是`<div>`对应的`fiber`，但是它的`newChild`是一个数组，也就是
 
 + `<span>我是Child1</span>`
@@ -794,7 +793,7 @@ function placeChild(newFiber, lastPlacedIndex, newIndex) {
 }
 ```
 
-### createChild-createFiberFromText
+### 2.2.1 createChild-createFiberFromText
 > 这里的创建`fiber`涉及到多种类型的创建，代码也非常多，这里只展示示例所触发的代码逻辑
 >
 
@@ -852,10 +851,8 @@ var createFiber = function (tag, pendingProps, key, mode) {
 }
 ```
 
-## (span)HostComponent-beginWork
+## 2.3 (span)HostComponent-beginWork
 跟上面流程相似，触发`updateComponent()`->`reconcileChildren()`->`mountChildFibers()`也就是`ChildReconciler(false)`
-
- 
 
 由于此时的`newChild`=`我是Child1`，是一个纯文本，因此会触发
 
@@ -904,13 +901,13 @@ function reconcileSingleTextNode(
 > 由于`<span>`是叶子结点，因此执行完`beginWork()`，就会执行`completeWork()`
 >
 
-## (纯文本)HostText-beginWork
+## 2.4 (纯文本)HostText-beginWork
 无任何处理，直接返回`null`
 
 > 由于`纯文本`是叶子结点，因此执行完`beginWork()`，就会执行`completeWork()`
 >
 
-## (纯文本)HostText-completeWork
+## 2.5 (纯文本)HostText-completeWork
 直接使用当前文本进行`document.createTextNode()`创建对应的文本`DOM`，然后赋值给`workProgress.stateNode`，最后再触发`bubbleProperties()`，将`childrenFiber`相关的`lanes`和`flags`向上冒泡
 
 ```javascript
@@ -939,7 +936,7 @@ function createTextNode(text, rootContainerElement) {
 }
 ```
 
-## (span)HostComponent-completeWork
+## 2.6 (span)HostComponent-completeWork
 由于是叶子结点，因此与`7.3 HostComponent-completeWork`相比较，会少掉`appendAllChildren()`的逻辑，也就是：
 
 + `createInstance()`：使用原生`createElement()`方法创建`原生DOM`
@@ -954,7 +951,7 @@ function createTextNode(text, rootContainerElement) {
 
 ---
 
-## (div)HostComponent-completeWork
+## 2.7 (div)HostComponent-completeWork
 跟`7.3 HostComponent-completeWork`的流程一致：
 
 + `createInstance()`：使用原生`createElement()`方法创建`原生DOM`
@@ -963,7 +960,7 @@ function createTextNode(text, rootContainerElement) {
 + `finalizeInitialChildren()`：初始化原生元素的一些事件处理和初始化属性，比如`input`输入框的`input.value`等等
 + `bubbleProperties()`进行`flags`和`lanes`的冒泡：处理`fiber.subtreeFlags`和`fiber.childLanes`进行`flags`和`lanes`的冒泡合并
 
-## HostRoot-completeWork
+## 2.8 HostRoot-completeWork
 > 与`7.4 HostRoot-completeWork`流程一致
 >
 
@@ -992,7 +989,7 @@ function completeWork(current, workInProgress, renderLanes) {
 }
 ```
 
-## commit阶段
+## 2.9 commit阶段
 在`commit阶段`中，主要是根据不同`flags`去触发不同逻辑
 
 
@@ -1002,9 +999,11 @@ function completeWork(current, workInProgress, renderLanes) {
 + `HostRoot`: 由于`Snapshot`，在`commitBeforeMutationEffects()`触发`container.textContent = ""`
 + `HostComponet(div)`：由于`Placement`，再`commitMutationEffects()`触发了`commitPlacement()`将`#root`和`<div>`两个`dom`进行关联
 
-# Fragment举例分析
+<br/>
+
+# 3. Fragment举例分析
 > 经过上面`HostRoot`、`HostComponent`、`HostText`的举例分析，我们已经了解到`render阶段`中的`beginWork()`和`completeWork()`以及`commit阶段`中的`commitBeforeMutaion`、`commitMutationEffects`、`commitLayoutEffects`的具体执行逻辑，因此我们在这个`Fragment`中不会再进行具体的例子分析，而是直接根据这几个阶段去分析`Fragment`有何特殊的地方
->
+
 
 ```javascript
 const domNode = document.getElementById('root');
@@ -1020,8 +1019,8 @@ const fragment = (
 root.render(fragment);
 ```
 
-## beginWork()
-### HostRoot
+## 3.1 beginWork()
+### 3.1.1 HostRoot
 一开始触发`HostRoot`的`beginWork()`->`reconcileChildren()`
 
 ```javascript
@@ -1112,7 +1111,7 @@ function placeChild(newFiber, lastPlacedIndex, newIndex) {
 }
 ```
 
-### Fragment
+### 3.1.2 Fragment
 > 此时触发的是第二个`<React.Fragment>`的`beginWork()`!
 >
 
@@ -1137,7 +1136,7 @@ function updateFragment(current, workInProgress, renderLanes) {
 }
 ```
 
-## completeWork()
+## 3.2 completeWork()
 没有进行什么特殊的处理，只是触发`bubbleProperties()`
 
 ```javascript
@@ -1159,13 +1158,13 @@ function completeWork(current, workInProgress, renderLanes) {
 }
 ```
 
-## commit阶段
+## 3.3 commit阶段
 由于在`beginWork()`阶段，直接略过了第一层`<React.Fragment>`的`fiber`创建，因此目前`root`的`childrenFiber`如下图所示
 
 + `<React.Fragment>`
 + `<p>`
 
-![](https://cdn.nlark.com/yuque/0/2024/png/35006532/1723516628820-a5fc08d0-4a58-45cb-97c7-5bf8c96b0874.png)
+![Image](https://github.com/user-attachments/assets/f9aa73d2-4ca9-4b6d-84cb-9ce35b7b56e5)
 
 因此触发`commit阶段`时，我们可以直接忽视第一层`<React.Fragment>`，直接看第二层`<React.Fragment>`
 
@@ -1321,7 +1320,7 @@ function commitPlacement(finishedWork) {
 }
 ```
 
-# FunctionComponent举例分析
+# 4. FunctionComponent举例分析
 ```javascript
 const domNode = document.getElementById('root');
 const root = ReactDOM.createRoot(domNode);
@@ -1335,8 +1334,8 @@ const App = ({testProps}) => {
 root.render(<App testProps={"app-children-wrapper"}/>);
 ```
 
-## beginWork()
-### HostRoot
+## 4.1 beginWork()
+### 4.1.1 HostRoot
 一开始触发`HostRoot`的`beginWork()`->`reconcileChildren()`
 
 ```javascript
@@ -1413,7 +1412,7 @@ function shouldConstruct(Component) {
 }
 ```
 
-### IndeterminateComponent
+### 4.1.2 IndeterminateComponent
 + 触发`renderWithHoos()`进行`FunctionComponent`的渲染
 + `workInProgress.flags |= PerformedWork`
 + `workInProgress.tag = FunctionComponent`
@@ -1453,7 +1452,7 @@ function mountIndeterminateComponent(...) {
 }
 ```
 
-#### renderWithHooks()
+#### 4.1.2.1 renderWithHooks()
 核心方法就是调用`Component()`进行渲染，如下面注释代码所示，我们这个示例的`Component()`方法为自动转化的`React.createElement`
 
 ```javascript
@@ -1495,8 +1494,10 @@ value = {
 > 继续触发`beginWork()`跟上面`HostComponent`的`beginWork()`的流程一模一样，这里不再重复分析
 >
 
-## completeWork
-![](https://cdn.nlark.com/yuque/0/2024/svg/35006532/1720158859314-56aefcb8-01e9-4934-afde-1c5eebf90064.svg)
+## 4.2 completeWork
+
+![Image](https://github.com/user-attachments/assets/203d41c4-167e-4fa8-9197-12e56b13b68b)
+
 
 从上图的执行顺序，我们可以知道，函数组件中的`HostComponent`会先执行，然后逐渐向上执行
 
@@ -1525,7 +1526,7 @@ function completeWork(current, workInProgress, renderLanes) {
 }
 ```
 
-## commit阶段
+## 4.3 commit阶段
 在`commit`阶段中，主要处理`flags`相关逻辑，`FunctionComponent`并没有构建什么特殊的`flags`，而`FunctionComponent`又处于`HostRoot`的第一层，因此还是按照上面所分析那样，
 
 当`finishedWork`=`FunctionComponent`时，在`commitReconciliationEffects()`触发`commitPlacement()`处理，也就是根据`parentFiber.tag`触发了：`insertOrAppendPlacementNodeIntoContainer()`
@@ -1559,7 +1560,7 @@ function commitPlacement(finishedWork) {
 }
 ```
 
-### insertOrAppendPlacementNodeIntoContainer()
+### 4.3.1 insertOrAppendPlacementNodeIntoContainer()
 与我们上面分析不同，这里的`node`是`FunctionComponent`，它是不具备`DOM`的！！！因此`isHost`=`false`，触发了第三个条件的代码
 
 + 我们会直接取`node.child`，也就是`FunctionComponent`中顶层元素`<div>`，然后触发`insertOrAppendPlacementNodeIntoContainer()`，这个时候`node`是`HostComponent`，具备`DOM`，因此可以执行插入操作，也就是`#root.appendChild(<div/>)`
@@ -1661,9 +1662,9 @@ appendAllChildren = function (parent, workInProgress) {
 };
 ```
 
-# ClassComponent举例分析
-## beginWork()
-### HostRoot
+# 5. ClassComponent举例分析
+## 5.1 beginWork()
+### 5.1.1 HostRoot
 一开始触发`HostRoot`的`beginWork()`->`reconcileChildren()`
 
 ```javascript
@@ -1740,7 +1741,7 @@ function shouldConstruct(Component) {
 }
 ```
 
-### ClassComponent
+### 5.1.2 ClassComponent
 `ClassComponent`类型也是直接触发`updateXXXX()`方法
 
 ```javascript
@@ -1799,7 +1800,7 @@ function updateClassComponent() {
 }
 ```
 
-#### constructClassInstance()
+#### 5.1.2.1 constructClassInstance()
 如下面精简代码所示，就是直接`new ctor(props, context)`，这个`ctor`就是`workInProgress.type`！
 
 ```javascript
@@ -1842,7 +1843,7 @@ var classComponentUpdater = {
 };
 ```
 
-#### mountClassInstance()
+#### 5.1.2.2 mountClassInstance()
 如下面精简代码所示，判断`instance.componentDidMount`是否存在，然后打上对应的`flags`
 
 ```javascript
@@ -1859,7 +1860,7 @@ function mountClassInstance(workInProgress, ctor, newProps, renderLanes) {
 }
 ```
 
-#### finishClassComponent()
+#### 5.1.2.3 finishClassComponent()
 最后触发`instance.render()`执行，打上`PerformedWork`标记，触发`reconcileChildren()`进行`children`的渲染
 
 ```javascript
@@ -1888,7 +1889,7 @@ nextChildren = {
 };
 ```
 
-## completeWork()
+## 5.2 completeWork()
 没有执行什么方法，只是触发了`bubbleProperties()`
 
 ```javascript
@@ -1908,7 +1909,7 @@ function completeWork(current, workInProgress, renderLanes) {
 }
 ```
 
-## commit阶段
+## 5.3 commit阶段
 与`FunctionComponent 10.3 commit阶段`的分析基本一致，触发了`commitPlacement()`->`insertOrAppendPlacementNodeIntoContainer()`，然后由于当前`node`不是`isHost`，从而向下寻找`node.child`进行`DOM`的关联
 
 ```javascript
@@ -1935,7 +1936,7 @@ function insertOrAppendPlacementNodeIntoContainer(node, before, parent) {
 }
 ```
 
-## IndeterminateComponent
+## 5.4 IndeterminateComponent
 在我们上面关于`FunctionComponent`的分析中，我们发现存在一种情况！也可以判断定为`ClassComponent`
 
 ```javascript
@@ -1987,7 +1988,7 @@ const AppTest = ()=> {
 
 
 
-# （TOTD）总结
+# 6.（TOTD）总结
 从上面的分析中，我们可以知道，当节点不是root时，我们会直接在render()阶段添加DOM元素形成HTML树，这跟`build own react`的描述是一样的
 
 而节点是root时，会在最后的commit阶段才出发DOM元素的添加，这跟`build own react`最终再添加DOM到root是逻辑是一样的
@@ -2007,7 +2008,6 @@ const AppTest = ()=> {
 
 
 > 详细说明？？
->
 
 + render()阶段：appendAllChildren() - `build own react`的performUnitOfwork()逻辑类似，不处理root元素
 + commit()阶段：处理Placement标记 - `build own react`的performUnitOfwork()逻辑类似，最终处理root元素
