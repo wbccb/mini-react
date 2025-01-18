@@ -1,5 +1,5 @@
 ---
-outline: deep
+outline: [1, 6]
 ---
 
 

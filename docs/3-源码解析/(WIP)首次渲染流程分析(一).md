@@ -1,5 +1,5 @@
 ---
-outline: deep
+outline: [1, 6]
 ---
 
 # 前言
@@ -60,7 +60,7 @@ root.render(<App />);
 ## 创建队列
 ## 压入队列
 ## 处理队列
-# ReactDOM.createRoot()
+# 1. ReactDOM.createRoot()
 一系列对象的初始化和事件初始化
 
 ```javascript
@@ -165,7 +165,10 @@ function ReactDOMRoot(internalRoot) {
 }
 ```
 
-# render()
+
+<br/>
+
+# 2. ReactDOMRoot.render()
 本质调用的是`updateContainer()`方法
 
 ```javascript
@@ -203,7 +206,7 @@ function updateContainer(...) {
 }
 ```
 
-## requestUpdateLane()
+## 2.1 requestUpdateLane()
 从`ReactDOM.createRoot()`的分析可以知道，一开始会传入`ConcurrentRoot`进行`fiberRoot`的创建，此时`mode = ConcurrentMode`
 
 ```javascript
@@ -281,7 +284,7 @@ function getEventPriority(domEventName) {
 }
 ```
 
-## createUpdate()创建更新队列
+## 2.2 createUpdate()创建更新队列
 从`requestUpdateLane()`中得到`lane=DefaultLane=16`后创建一个`update`的普通对象
 
 ```javascript
@@ -302,7 +305,7 @@ function createUpdate(eventTime, lane) {
 }
 ```
 
-## enqueueUpdate()将update放入队列中
+## 2.3 enqueueUpdate()将update放入队列中
 整体逻辑比较简单，最终触发
 
 + `enqueueUpdate()`：直接将创建的`update`放入到全局对象`concurrentQueues`中，并且处理下`lanes`
@@ -353,7 +356,7 @@ function getRootForUpdatedFiber(sourceFiber) {
 }
 ```
 
-## scheduleUpdateOnFiber()处理队列
+## 2.4 scheduleUpdateOnFiber()处理队列
 ```javascript
 function scheduleUpdateOnFiber(root, fiber, lane, eventTime) {
   //...
@@ -372,7 +375,7 @@ function scheduleUpdateOnFiber(root, fiber, lane, eventTime) {
 }
 ```
 
-### markRootUpdated()
+### 2.4.1 markRootUpdated()
 `root.pendingLanes`：包含了当前`rootFiber`树中所有待处理的`update`的`lane`(包含所有`childFiber`的`update`)，可以根据`pendingLanes`一定范围的取值去拿到当前优先级最高的`lanes`，然后赋值给`renderLanes`，后续遍历`updateQueue`时可以判断当前`update`是否就是`renderLanes`的值得到当前优先级最高的`update`更新对象  
 注：因为diff是从root开始的，因此将所有更新信息都同步到root可以知道要跳过哪些更新
 
@@ -380,7 +383,7 @@ function scheduleUpdateOnFiber(root, fiber, lane, eventTime) {
 root.pendingLanes |= updateLane;
 ```
 
-### ensureRootIsScheduled()
+### 2.4.2 ensureRootIsScheduled()
 从下面代码可以知道，主要分为：
 
 + 2.4.2.1 `markStarvedLanesAsExpired()`饥饿问题处理，避免低优先级一直无法执行
@@ -422,7 +425,7 @@ function ensureRootIsScheduled(root, currentTime) {
 }
 ```
 
-#### markStarvedLanesAsExpired饥饿问题
+#### 2.4.2.1 markStarvedLanesAsExpired饥饿问题
 > 低优先级任务一直被高优先级任务打断，检查低优先级任务是否一直堵塞，强制转化为过期任务提高优先级
 >
 
@@ -487,11 +490,11 @@ function computeExpirationTime(lane, currentTime) {
 }
 ```
 
-#### getNextLanes()
+#### 2.4.2.2 getNextLanes()
 > 由于这一块比较复杂，涉及到大量`lanes`的计算，后面会出一篇文章具体分析`lane`，后面完成后再补充链接到这里
 >
 
-#### getHighestPriorityLane()
+#### 2.4.2.3 getHighestPriorityLane()
 `lanes`的位置是有优先级区分的，高优先级会放在最右边
 
 
@@ -517,14 +520,18 @@ const TransitionHydrationLane: Lane = /*                */ 0b0000000000000000000
 const TransitionLanes: Lanes = /*                       */ 0b0000000001111111111111111000000;
 ```
 
-#### scheduleCallback()
+#### 2.4.2.4 scheduleCallback()
 使用的是`scheduler`调度器的`unstable_scheduleCallback()`方法
 
 > 由于这一块内容较多，将在下一个大点`scheduleCallback()`中进行分析
 >
 
-# scheduler
-## scheduleCallback()
+<br/>
+
+<br/>
+
+# 3. scheduler
+## 3.1 scheduleCallback()
 下面代码虽然很长，但是实际的逻辑是非常简单的，主要集中在几个方面：
 
 + `taskQueue`：存储普通任务的队列
@@ -605,7 +612,7 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
 > 那么`requestHostCallback()`具体的执行逻辑是怎样的呢？是如何触发微前端的呢？返回`newTask`给`root.callbackNode = newCallbackNode(也就是newTask)`有什么作用呢？
 >
 
-## requestHostCallback()
+## 3.2 requestHostCallback()
 从下面代码可以知道，我们一开始就会根据环境初始化`schedulePerformWorkUntilDeadline`的赋值，我们假设目前环境支持`MessageChannel`，如下面代码所示
 
 ```javascript
@@ -665,7 +672,7 @@ var performWorkUntilDeadline = function () {
 };
 ```
 
-## flushWork()
+## 3.3 flushWork()
 从下面代码可以知道，有多个全局变量
 
 + `isHostCallbackScheduled`：用于控制`requestHostCallback`的调用频率，`flushWork()`执行后才能触发下一轮`requestHostCallback()`，也就是只有`port.postMessage`的消息送到了并且执行了回调函数，才能进行下一轮的`port.postMessage`
@@ -724,7 +731,7 @@ function unstable_scheduleCallback(...) {
 > 在`flushWork()`中分析中，我们知道，主要核心代码就是触发`workLoop()`
 >
 
-## workLoop()
+## 3.4 workLoop()
 在分析`workLoop()`之前，我们先分析一个出现在`workLoop()`中出现很多次的方法`advanceTimers`
 
 
@@ -816,7 +823,9 @@ function workLoop(hasTimeRemaining, initialTime) {
 }
 ```
 
-# performConcurrentWorkOnRoot()-task.callback具体执行方法
+<br/>
+
+# 4. performConcurrentWorkOnRoot()-task.callback具体执行方法
 从下面代码，我们主要分为几块内容：
 
 + `flushPassiveEffects()`执行`effect`？？？？？后面再继续分析
@@ -884,7 +893,7 @@ function performConcurrentWorkOnRoot(root, didTimeout) {
 > shouldTimeSlice的计算依赖于`includesBlockingLane()`和`includesExpiredLane()`，那么这两个函数执行了什么逻辑呢？
 >
 
-## shouldTimeSlice
+## 4.1 shouldTimeSlice
 `SyncDefaultLanes`代表优先级非常高的`lane`，不能进行切片慢慢执行，`BlockingLane`=`InputContinuousHydrationLane` | `InputContinuousLane` | `DefaultHydrationLane` | `DefaultLane`
 
 
@@ -907,13 +916,16 @@ function includesExpiredLane(root, lanes) {
 }
 ```
 
-## renderRootSync()
-由于这小节内容较多，我们移入到`3.6`进行具体的分析
+## 4.2 renderRootSync()
+由于这小节内容较多，我们移入到`5. renderRootSync()`进行具体的分析
 
-## finishConcurrentRender()
-由于这小节内容较多，我们移入到`3.7`进行具体的分析
+## 4.3 finishConcurrentRender()
+由于这小节内容较多，我们移入到`6. finishConcurrentRender()`进行具体的分析
 
-# renderRootSync()
+
+<br/>
+
+# 5. renderRootSync()
 初次渲染时，`workInProgressRoot`初始值为`null`, `workInProgressRootRenderLanes`的初始值为`NoLanes = 0`，因此会触发`prepareFreshStack()`进行一些准备工作，然后触发核心方法
 
 + `workLoopSync()` 也就是`performUnitOfWork()`
@@ -947,7 +959,7 @@ function workLoopSync() {
 }
 ```
 
-## prepareFreshStack
+## 5.1 prepareFreshStack
 从下面可以知道，主要触发
 
 + `rootWorkInProgress = createWorkInProgress(root.current)`根据当前`rootFiber`创建一个新的`fiber`，赋值给全局变量`workInProgressRoot`
@@ -969,7 +981,7 @@ function prepareFreshStack(root, lanes) {
 }
 ```
 
-### createWorkInProgress()
+### 5.1.1 createWorkInProgress()
 如下面代码所示，就是利用当前`rootFiber`创建一个新的`fiber`
 
 > 注意`workInProgress.alternate = current`和`current.alternate = workInProgress`，并不是直接复用旧的`fiber Root`，而是根据`current`新建一个`fiber Root`
@@ -1002,7 +1014,7 @@ function createWorkInProgress(current, pendingProps) {
 }
 ```
 
-### finishQueueingConcurrentUpdates()
+### 5.1.2 finishQueueingConcurrentUpdates()
 将`concurrentQueues`的内容拿出来(包括`queue`、`fiber`、`lane`、`update`)，形成一个链表结构，然后调用`markUpdateLaneFromFiberToRoot()`更新`lanes`以及将`children`的`lane`都更新到`fiber.childrenLanes`中（为后面diff做准备，可以知道哪些`child`可以跳过更新）
 
 ```javascript
@@ -1068,7 +1080,7 @@ function markUpdateLaneFromFiberToRoot(sourceFiber, update, lane) {
 > 经过`prepreFreshStatck()`？？？这个方法到底实现了什么？然后触发`workLoopSync()`
 >
 
-## workLoopSync()->performUnitOfWork()
+## 5.2 workLoopSync()->performUnitOfWork()
 从下面代码可以知道，`renderRootSync()`核心就是触发`workLoopSync()`->`performUnitOfWork()`，因此我们主要分析`performUnitOfWork()`即可
 
 ```javascript
@@ -1124,14 +1136,14 @@ function workLoopSync() {
 
 
 > 从源码上的名称，我们可以知道，`beginWork()`拿到的就下一个`unitOfWork`（根据react源码未打包版本，就是一个`Fiber`），那么`beginWork()`和`completeUnitOfWork()`的执行顺序是怎样的呢？
->
 
 如下图所示，从调试代码打印的信息可以知道，`beginWork()`和`completeUnitOfWork()`的执行顺序是一个深度优先遍历（神似二叉树的后序遍历）
 
-![](https://cdn.nlark.com/yuque/0/2024/png/35006532/1719675681230-3d986ac2-0374-4bb1-8d0d-565e977bb824.png)
+![Image](https://github.com/user-attachments/assets/074aeb98-e246-4108-a2d2-1892aafd289b)
+
 
 > `beginWork()`和`completeUnitOfWork()`的执行顺序在代码中是如何实现的呢？
->
+
 
 ```javascript
 function workLoopSync() {
@@ -1179,9 +1191,10 @@ function completeUnitOfWork(unitOfWork) {
 
 上面的代码看起来很多，其实总结起来就是：
 
-![](https://cdn.nlark.com/yuque/0/2024/svg/35006532/1720158868386-73f9bb34-a0f9-4182-aca7-e8c8a1847cbd.svg)
+![Image](https://github.com/user-attachments/assets/73b0e552-d959-4e98-bd2d-2d958da2fc4e)
 
-### [build-your-own-react](https://pomb.us/build-your-own-react/)分析对比
+
+### 5.2.1 [build-your-own-react](https://pomb.us/build-your-own-react/)分析对比
 由于`beginWork()`和`completeWork()`章节内容较多，并且不容易理解，因此我们这里需要借助下其它文章[React初探-构建最小化的React](https://github.com/wbccb/mini-react/blob/main/docs/1-%E5%89%8D%E7%BD%AE%E7%9F%A5%E8%AF%86%26%E5%8E%9F%E7%90%86%E5%88%9D%E6%8E%A2/0-(WIP)React%E5%88%9D%E6%8E%A2-%E6%9E%84%E5%BB%BA%E6%9C%80%E5%B0%8F%E5%8C%96%E7%9A%84React.md)文章分析一波，可以有助于我们更好理解`beginWork()`和`completeWork()`的流程，如下面流程图所示，我们可以简单对比下（可能部分细节不太准确，但是大体方向是对的）：
 
 + `React18`的`beginWork()`其实就是下图`performUnitOfWork()`中的`createDom()`和`reconcileChildren()`，用户操作后会形成新的`fiber`树，新的`fiber`树会比较旧的`fiber`树，看看哪些`DOM`可以复用！因此会通过`reconcileChildren()`进行比较，如果可以复用，就进行复用旧的`fiber`树上`fiber`对应的`dom`；如果无法复用，则创建新的`dom`，最终形成一棵新的`fiber树(上面持有DOM，离屏DOM，还没挂载在<html>上，等待最终commit才挂载)`
@@ -1190,9 +1203,10 @@ function completeUnitOfWork(unitOfWork) {
   - 如果遇到替换，直接更新旧的`fiber`树上`fiber`对应的`DOM`属性即可！
   - 然后递归调用`commit(fiber.child)`和`commit(fiber.sibling)`
 
-![](https://cdn.nlark.com/yuque/0/2024/svg/35006532/1720062165723-bf4a521a-177c-4566-8056-fb6289801b6a.svg)
+![Image](https://github.com/user-attachments/assets/529f1c3d-91e7-4759-8cb3-5d522f0d8315)
 
-### beginWork()
+
+### 5.2.2 beginWork()
 初次渲染主要根据`workInProgress.tag`进行不同逻辑的调用，比如
 
 + `IndeterminateComponent`：函数组件`mount`时进入的分支
@@ -1229,7 +1243,7 @@ function beginWork(current, workInProgress, renderLanes) {
 }
 ```
 
-### completeUnitOfWork->completeWork
+### 5.2.3 completeUnitOfWork->completeWork
 `completeUnitOfWork()`就是一个深度遍历的非递归版本
 
 ```javascript
@@ -1260,7 +1274,8 @@ function completeUnitOfWork(unitOfWork) {
 
 从下面的流程图我们可以知道，`completedWork()`类似于后序遍历，会从`child`->`child.sibling`->`parent`不断向上遍历
 
-![](https://cdn.nlark.com/yuque/0/2024/svg/35006532/1720158859314-56aefcb8-01e9-4934-afde-1c5eebf90064.svg)
+![Image](https://github.com/user-attachments/assets/f6babdb6-0dde-4283-bd56-729342ca07c3)
+
 
 而`completeWork()`执行内容与`beginWork()`类似，都是根据`fiber.tag`进行不同方法的调用
 
@@ -1280,7 +1295,7 @@ function completeWork(current, workInProgress, renderLanes) {
 }
 ```
 
-#### bubbleProperties()
+#### 5.2.3.1 bubbleProperties()
 通过`mergeLanes(_child.lanes, _child.childLanes)`，不断将`children`的`lanes`冒泡到`parent`
 
 > 在遍历过程中，会不断将目前子节点的`lanes`和`flags`都合并到当前节点的`childLanes`和`subtreeFlags`，这样做的目的是当我们从`root`开始向下渲染时，我们不用深度遍历到某一个子节点，我们就能从某一个父节点知道子节点是否需要更新，以及是否存在`effect`需要处理！
@@ -1318,11 +1333,11 @@ function bubbleProperties(completedWork) {
 
 由于我们执行`completeWork()`是从`child`->`parent`，因此我们可以将所有`child fiber`的`lanes`、`childLanes`、`flags`、`subtreeFlags`都合并到`parent`对应的`childLanes`和`subtreeFlags`属性，这样我们可以直接通过判断`root`数据中的`childLanes`和`subtreeFlags`属性轻易得到`children`的一些属性，比如更新优先级、更新类型（删除、新增、替换），而不用每次都深度遍历才能知道`children`的一些属性
 
-![](https://cdn.nlark.com/yuque/0/2024/png/35006532/1720350935198-2b3c71fa-bf3b-4c29-9d22-c1584994160c.png)
+![Image](https://github.com/user-attachments/assets/d8e4ab8b-554c-404b-b2b8-5dbd9e1fc919)
 
-# finishConcurrentRender()
-回到`3.5 performConcurrentWorkOnRoot()`的分析中，我们上面已经分析了`3.6 renderRootSync()`的`render阶段`，现在进入了`commit阶段`
 
+# 6. finishConcurrentRender()
+回到`performConcurrentWorkOnRoot()`的分析中，我们上面已经分析了`renderRootSync()`的`render阶段`，现在进入了`commit阶段`
 
 
 主要核心代码为`root.finishedWork=root.current.alternate`和`finishConcurrentRender()`，如下面代码所示
@@ -1412,7 +1427,9 @@ function commitRootImpl(...) {
 > 而`BeforeMutationMask`、`MutationMask`、`LayoutMask`、`PassiveMask`又代表什么意思呢？
 >
 
-## flags种类
+## 6.1 flags种类
+
+
 ```javascript
 var BeforeMutationMask = Update | Snapshot;
 var MutationMask = Placement | Update | ChildDeletion | ContentReset | Ref | Hydrating | Visibility;
@@ -1420,7 +1437,7 @@ var LayoutMask = Update | Callback | Ref | Visibility;
 var PassiveMask = Passive | ChildDeletion;
 ```
 
-## commitBeforeMutationEffects()
+## 6.2 commitBeforeMutationEffects()
 从下面`commitBeforeMutationEffects()`代码我们可以知道，本质是深度优先遍历，我们从根`fiber`开始遍历，不停将`nextEffect`赋值给`fiber.child`，直到叶子`fiber`，然后触发`commitBeforeMutationEffects_complete()`
 
 ```javascript
@@ -1469,7 +1486,7 @@ function commitBeforeMutationEffects_complete() {
 }
 ```
 
-### commitBeforeMutationEffectsOnFiber()
+### 6.2.1 commitBeforeMutationEffectsOnFiber()
 > 处理`Snapshot`相关标记
 >
 
@@ -1516,7 +1533,7 @@ function commitBeforeMutationEffectsOnFiber(finishedWork) {
 }
 ```
 
-## commitMutationEffects()
+## 6.3 commitMutationEffects()
 ```javascript
 function commitMutationEffects(root, finishedWork, committedLanes) {
   //...
@@ -1599,7 +1616,7 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
   }
 ```
 
-### recursivelyTraverseMutationEffects()
+### 6.3.1 recursivelyTraverseMutationEffects()
 在`commitMutationEffectsOnFiber()`中高频出现的`recursivelyTraverseMutationEffects()`是为了
 
 + 处理当前`fiber.deletions`，在`reconcileChildFibers()`中进行`fiber.deletions`数据的添加（也就是`fiber.children`中已经被移除的数据）
@@ -1646,7 +1663,7 @@ function ChildReconciler(shouldTrackSideEffects) {
 }
 ```
 
-### commitReconciliationEffects()
+### 6.3.2 commitReconciliationEffects()
 处理`Placement`和`Hydrating`相关更新，触发`commitPlacement()`
 
 ```javascript
@@ -1662,7 +1679,7 @@ function commitReconciliationEffects(finishedWork) {
 }
 ```
 
-## commitLayoutEffects()
+## 6.4 commitLayoutEffects()
 与`commitBeforeMuationEffects()`逻辑一致，先处理`children`->`children.sibling`->`parent`->`finishedWork`
 
 
@@ -1714,7 +1731,7 @@ function commitLayoutMountEffects_complete(subtreeRoot, root, committedLanes) {
 }
 ```
 
-### commitLayoutEffectOnFiber()
+### 6.4.1 commitLayoutEffectOnFiber()
 + 处理`Update | Callback | Ref | Visibility`相关`flags`标记
 + 根据`fiber.tag`调用不同方法进行处理
 
