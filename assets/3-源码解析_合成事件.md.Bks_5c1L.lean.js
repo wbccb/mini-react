@@ -1,0 +1,1 @@
+import{_ as e,c as t,o as a}from"./chunks/framework.BZW3-RJc.js";const m=JSON.parse('{"title":"","description":"","frontmatter":{},"headers":[],"relativePath":"3-源码解析/合成事件.md","filePath":"3-源码解析/合成事件.md"}'),r={name:"3-源码解析/合成事件.md"};function o(s,c,n,_,p,d){return a(),t("div")}const f=e(r,[["render",o]]);export{m as __pageData,f as default};
