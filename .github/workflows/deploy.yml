@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - docs
+      - docs # 如果要更新线上文档，则将main分支的代码同步到docs触发部署更新，平时还是以main为主 提交docs和packages的更新
 
 jobs:
   deploy:
