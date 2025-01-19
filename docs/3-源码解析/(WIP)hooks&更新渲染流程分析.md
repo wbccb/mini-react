@@ -3,6 +3,11 @@ outline: [1, 6]
 ---
 
 # 前言
+
+在前面的文章中，我们分析初次渲染的具体流程
+
+接下来我们将着重于分析各种触发渲染更新的操作、更新时的diff流程、更新时联动hooks刷新的逻辑
+
 ## 文章内容概述
 1. 分析`useReducer`的相关源码，了解任务的创建以及更新相关流程
 2. 分析`useState`的相关源码，了解任务的创建以及更新相关流程
@@ -11,15 +16,15 @@ outline: [1, 6]
 5. 分析其它常见的`useXXX`的相关源码
 
 > workInProgress全局变量的赋值情况？？很多地方都有current以及workInProgress，它们的关系是怎么样的？
->
 
 ## 文章要解决的问题
 1. `update`、`lane`、`task`之间的关系，它们是如何配合进行调度更新的？
 
 > 有多种更新？元素更新？function更新？还有state更新？？
->
 
-# useReducer
+<br/>
+
+# 1. useReducer
 ```javascript
 const [reducerState, dispatch] = React.useReducer(reducer, {age: 42});
 ```
@@ -77,7 +82,6 @@ function renderWithHooks() {
 然后触发`Component()`，也就是`FunctionComponent()`中实际的内容，全部执行一遍，然后`return`对应的`React.createElement(...)`作为`fiber`赋值给`children`
 
 > 根据当前`current`去切换`HooksDispatcherOnMount`/`HooksDispatcherOnUpdate`，对应不同的方法，因此初始化`React.useReducer`=`mountReducer`，而更新时`React.useReducer`=`updateReducer`
->
 
 当我们在代码中有`React.useReducer()`时，会触发`mountReducer()`，如下面代码所示，在我们示例中，传入的
 
@@ -121,7 +125,7 @@ function mountReducer(reducer, initialArg, init) {
 }
 ```
 
-### fiber.memoizedState单链表结构存储hooks
+### 1.1.1 fiber.memoizedState单链表结构存储hooks
 从初始化`mountWorkInProgressHook()`方法可以知道，`hook`本身有一个`memoizedState`属性，`fiber`本身也有一个`memoizedState`属性，不同的是
 
 + `hook.memoizedState`存储的是`state`当前的值
@@ -150,7 +154,7 @@ function mountWorkInProgressHook() {
 > 注：`workInProgressHook`表示当前正在初始化的`hook`，不是`workInProgress`！！是两个不同的变量
 >
 
-### hook 的更新方法初始化
+### 1.1.2 hook 的更新方法初始化
 当前`currentlyRenderingFiber$1`为`FunctionComponet`代表的`fiber`，`queue`代表的是当前`fiber`中其中一个`hook`的`queue`
 
 ```javascript
@@ -515,15 +519,15 @@ function updateReducer(reducer, initialArg, init) {
 }
 ```
 
-#### updateWorkInProgressHook()
-+ 先使用`currentlyRenderingFiber$1.memoizedState`获取当前渲染tree的头节点，如果该头节点不为空，则不断重用复用以该头节点构建的链表，不断
+#### 1.3.1.1 updateWorkInProgressHook()
+- 先使用`currentlyRenderingFiber$1.memoizedState`获取当前渲染tree的头节点，如果该头节点不为空，则不断重用复用以该头节点构建的链表，不断
   - `nextWorkInProgressHook` = `workInProgressHook.next`
   - `workInProgressHook`=`nextWorkInProgressHook`
 
 > 注：这里不是一个循环while，很多局部变量用一次就废弃了，比如`nextWorkInProgressHook`，每次进入`updateWorkInProgressHook()`都要重新赋值的，因此下面代码对比源码去除了无用的代码赋值
->
 
-+ 而`currentlyRenderingFiber$1.memoizedState`可能为空，因此我们可以复用
+
+- 而`currentlyRenderingFiber$1.memoizedState`可能为空，因此我们可以复用
   - `current`=`currentlyRenderingFiber$1.alternate`
   - 使用`current.memoizedState`所代表的链表去复制一个新的`newHook`，然后赋值给`currentlyRenderingFiber$1.memoizedState`和`workInProgressHook`，此时`currentHook`代表着两棵tree相同位置对应的`hook`代码（`useXXX()`）
   - 在下一次触发`updateWorkInProgressHook()`时，如果`currentlyRenderingFiber$1.memoizedState`所代表的链表还是为空，则继续复用`alternate`，也就是`currentHook.next`去复制出新的`newHook`，然后`workInProgressHook.next`=`newHook`
@@ -531,7 +535,7 @@ function updateReducer(reducer, initialArg, init) {
 > `currentlyRenderingFiber$1.memoizedState`可能为空发生在第一次更新？？因为双缓冲树只是在mount构建了其中的一棵。然后第一个更新，会切换到新的tree，此时`memoizedState`为空
 >
 > currentlyRenderingFiber$1.memoizedState不为空则发生在第二次～以后的更新？？
->
+
 
 
 
@@ -614,7 +618,9 @@ function updateWorkInProgressHook() {
 }
 ```
 
-# useState
+<br/>
+
+# 2. useState
 ## 2.1 初始化mountState
 从上面`mountReducer()`的分析可以知道，我们会从`ClassComponent`的`beginWork()`开始触发，然后进行`useState()`的执行，初始化阶段`useState()`就是`mountState()`，与`mountReducer()`一样
 
@@ -793,7 +799,11 @@ function updateReducer(reducer, initialArg, init) {
 }
 ```
 
-# 多种更新类型分析
+
+<br/>
+
+
+# 3. 多种更新类型分析
 > setState如何触发更新？
 >
 > 任务优先级如何排列？用户输入？setState又产生的任务优先级？functionComponent因为setState触发的渲染？
@@ -801,31 +811,33 @@ function updateReducer(reducer, initialArg, init) {
 > 跟Vue的响应式重新渲染不同，它是全量渲染，每次diff进行标记“删除”，然后渲染时触发对应的删除逻辑
 >
 
-## setState触发删除逻辑
-### deleteChild删除单个子节点
-### deleteRemainingChildren删除剩余节点
-### commit阶段处理ChildDeleteionsFalgs??
+## 3.1 setState触发删除逻辑
+### 3.1.1 deleteChild删除单个子节点
+### 3.1.2 deleteRemainingChildren删除剩余节点
+### 3.1.3 commit阶段处理ChildDeleteionsFalgs??
 
 
 新增、删除、复用更新属性（可能会移动）
 
-# 
-# diff算法简单解析
+<br/>
+
+
+# 4. diff算法简单解析
 > 具体的diff算法查看下一篇文章进行了解
->
 
 
 
-# 其他常见的useXXX源码分析
+<br/>
+
+# 5. 其他常见的useXXX源码分析
 ## 5.1 useEffect
 ## 5.2 useCallback
 ## 5.3 useLayoutEffect
 ## 5.4 useMemo
 ## 5.5 useContext
 > 具体的context相关分析请看下一篇文章进行了解
->
 
+<br/>
 
-
-# 问题总结
-## hook.baseQueue和hook.pending的区别是什么？
+# 6. 问题总结
+## 6.1 hook.baseQueue和hook.pending的区别是什么？
