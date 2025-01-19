@@ -108,7 +108,6 @@ function commitPlacement(finishedWork: Fiber) {
 	//!!!!看清楚是parentFiber.tag，不是fiber.tag
 	switch (parentFiber.tag) {
 		case HostRoot:
-			debugger;
 			const _parent: Element = parentFiber.stateNode.containerInfo; // 根Fiber的DOM存放比较特殊
 			const _before = getHostSibling(finishedWork);
 			insertOrAppendPlacementNodeIntoContainer(finishedWork, _before, _parent);
