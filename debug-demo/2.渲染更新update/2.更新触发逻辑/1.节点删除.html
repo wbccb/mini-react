@@ -23,9 +23,9 @@
         const [reducerState, dispatch] = React.useReducer(reducer, {first: 42});
 
         function reducer(state, {type}) {
-            if (type === "incremented_second") {
+            if (type === "incremented") {
                 return {
-                    second: state.second + 1
+                    first: state.first + 1
                 };
             }
             throw Error('Unknown action.');
@@ -33,21 +33,21 @@
 
         const reducerJsx = (
             <React.Fragment>
-                <span>reducer现在是：{reducerState.first}</span>
-                <span>reducer现在是：{reducerState1.second}</span>
-                <div>
-                    <button onClick={() => {
-                        dispatch1({type: "incremented_second"});
-                        dispatch1({type: "incremented_second"});
-                    }}>
-                        reducerState点击增加1
-                    </button>
-                </div>
+                {
+                    reducerState.first % 2 === 0 ? (
+                        <span>当前我是2的倍数</span>
+                    ) : (<p></p>)
+                }
             </React.Fragment>
         );
 
         return (
             <div>
+                <button onClick={() => {
+                    dispatch({type: "incremented"});
+                }}>
+                    reducerState点击增加1
+                </button>
                 {reducerJsx}
             </div>
         )

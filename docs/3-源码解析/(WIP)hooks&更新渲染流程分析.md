@@ -804,17 +804,444 @@ function updateReducer(reducer, initialArg, init) {
 
 
 # 3. 多种更新类型分析
-> setState如何触发更新？
->
-> 任务优先级如何排列？用户输入？setState又产生的任务优先级？functionComponent因为setState触发的渲染？
->
-> 跟Vue的响应式重新渲染不同，它是全量渲染，每次diff进行标记“删除”，然后渲染时触发对应的删除逻辑
->
 
-## 3.1 setState触发删除逻辑
-### 3.1.1 deleteChild删除单个子节点
-### 3.1.2 deleteRemainingChildren删除剩余节点
-### 3.1.3 commit阶段处理ChildDeleteionsFalgs??
+更新的时候主要分为4种类型：
+- 删除节点
+- 新增节点
+- 移动节点
+- 复用节点
+
+我们接下来将根据上面4种类型进行分析
+> 比如删除节点，我们在什么阶段进行fiber删除的flag标记的？我们在什么阶段进行删除flag标记对应的dom节点的删除的？
+
+## 3.1 删除逻辑
+
+在`reconcileChildFibers()`中，我们需要判断当前是否是初次渲染的阶段，如果是初次渲染，则不用触发对应的删除逻辑 
+
+如果是渲染更新，分为两种情况
+- 新的数据是单个元素：触发`reconcileSingleElement()`
+  - 旧的数据是单个元素：根据`key`+`type`判断是否可以复用，否则删除
+  - 旧的数据是Array：根据`key`+`type`找到可以复用的数据，其余都删除
+- 新的数据是Array元素：触发`reconcileChildrenArray()` => 涉及到多个元素的diff算法，下面的小节再进行详细分析
+- 新的数据为空时，直接触发`deleteRemainingChildren()`删除所有的旧节点数据
+
+```ts
+function reconcileChildFibers(returnFiber, currentFirstChild, newChild, lanes) {
+  var isUnkeyedTopLevelFragment =
+    typeof newChild === "object" &&
+    newChild !== null &&
+    newChild.type === REACT_FRAGMENT_TYPE &&
+    newChild.key === null;
+
+  if (isUnkeyedTopLevelFragment) {
+    newChild = newChild.props.children;
+  }
+
+  if (typeof newChild === "object" && newChild !== null) {
+    switch (newChild.$$typeof) {
+      case REACT_ELEMENT_TYPE:
+        return placeSingleChild(
+          reconcileSingleElement(
+            returnFiber,
+            currentFirstChild,
+            newChild,
+            lanes
+          )
+        );
+      //...
+    }
+
+    if (isArray(newChild)) {
+      //...新的数据是Array元素 => 触发`reconcileChildrenArray()`
+    }
+  }
+
+  //...处理文本
+
+  return deleteRemainingChildren(returnFiber, currentFirstChild); //...新的数据为空，直接删除旧的所有数据
+}
+```
+
+当新的`children`是一个`singleElement`时，我们会触发`reconcileSingleElement()`进行处理
+- 如果`key`不同，则触发`deleteChild()`直接删除旧的节点数据
+- 如果`key`相同，`type`又不相同，说明可以复用的节点数据的类型已经改变，所有旧的数据都无法复用，直接触发`deleteRemainingChildren()`删除所有的旧节点数据
+- 如果`key`相同，`type`相同，则说明可以复用，保留当前的节点，触发`deleteRemainingChildren()`删除其余的旧节点数据
+> 注：当`child.tag === Fragment`时，需要提取`element.props.children`而不是`element.props`
+
+```ts
+
+function reconcileSingleElement(
+  returnFiber,
+  currentFirstChild, // 旧的数据
+  element, // 新的数据
+  lanes
+) {
+  var key = element.key;
+  var child = currentFirstChild;
+
+  while (child !== null) {
+    if (child.key === key) {
+      var elementType = element.type;
+
+      if (elementType === REACT_FRAGMENT_TYPE) {
+        if (child.tag === Fragment) {
+          // 因为新的element数据是单节点，如果旧的数据也是同样的fragment，那么旧的数据的剩余节点都可以直接删除
+          deleteRemainingChildren(returnFiber, child.sibling);
+          var existing = useFiber(child, element.props.children);
+          existing.return = returnFiber;
+
+          return existing;
+        }
+      } else {
+        if (child.elementType === elementType) {
+          deleteRemainingChildren(returnFiber, child.sibling);
+
+          var _existing = useFiber(child, element.props);
+
+          _existing.ref = coerceRef(returnFiber, child, element);
+          _existing.return = returnFiber;
+
+          return _existing;
+        }
+      } // Didn't match.
+
+      deleteRemainingChildren(returnFiber, child);
+      break;
+    } else {
+      deleteChild(returnFiber, child);
+    }
+
+    child = child.sibling;
+  }
+
+  // ...新的数据的fiber创建逻辑
+}
+```
+
+### 3.1.1 fiber标记：deleteChild标记单个子节点删除
+
+获取当前fiber对应的`deletions`，然后将当前fiber想要删除的`childFiber`添加到`deletions`中
+
+> 注意：是将要删除的子fiber添加到父fiber的`deletions`中!! 并且给当前父fiber打上`ChildDeletion`的`flags`
+
+```ts
+function deleteChild(returnFiber, childToDelete) {
+  if (!shouldTrackSideEffects) {
+    return;
+  }
+  var deletions = returnFiber.deletions;
+
+  if (deletions === null) {
+    returnFiber.deletions = [childToDelete];
+    returnFiber.flags |= ChildDeletion;
+  } else {
+    deletions.push(childToDelete);
+  }
+}
+```
+
+### 3.1.2 fiber标记：deleteRemainingChildren标记多个节点删除
+
+
+```ts
+function deleteRemainingChildren(returnFiber, currentFirstChild) {
+  if (!shouldTrackSideEffects) {
+    return null;
+  }
+  var childToDelete = currentFirstChild;
+
+  while (childToDelete !== null) {
+    deleteChild(returnFiber, childToDelete);
+    childToDelete = childToDelete.sibling;
+  }
+
+  return null;
+}
+```
+
+### 3.1.3 fiber标记处理：commit阶段处理ChildDeletion
+> 根据fiber.ChildDeletion进行对应真实DOM的删除
+
+
+在之前的分析中，我们知道`commitMutationEffectsOnFiber()`会触发
+- `recursivelyTraverseMutationEffects()`
+- `commitReconciliationEffects()`
+
+在`commitMutationEffectsOnFiber()`中高频出现的`recursivelyTraverseMutationEffects()`是为了
++ 处理当前`fiber.deletions`，在`reconcileChildFibers()`中进行`fiber.deletions`数据的添加（也就是`fiber.children`中已经被移除的数据）
++ 然后触发`fiber.child`进行`commitMutationEffectsOnFiber()`=>`fiber.child`处理完成，就处理`fiber.child.sibling`，触发`commitMutationEffectsOnFiber()`
+
+总结：处理`fiber.childrenDeletion`集合 + 往下遍历`fiber.child` + `fiber.child.sibling`进行递归调用`commitMutationEffectsOnFiber()`
+
+```ts
+function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
+  //...
+  switch (finishedWork.tag) {
+    case FunctionComponent:
+    case ForwardRef:
+    case MemoComponent:
+    case SimpleMemoComponent: {
+      recursivelyTraverseMutationEffects(root, finishedWork);
+      commitReconciliationEffects(finishedWork);
+      if (flags & Update) {
+        commitHookEffectListUnmount(Insertion | HasEffect, ...);
+        commitHookEffectListMount(Insertion | HasEffect, finishedWork);
+        commitHookEffectListUnmount(Layout | HasEffect, ...);
+      }
+      return;
+    }
+    case ClassComponent: {
+      recursivelyTraverseMutationEffects(root, finishedWork);
+      commitReconciliationEffects(finishedWork);
+      if (flags & Ref) {
+        //...
+      }
+      return;
+    }
+    case HostComponent: {
+      recursivelyTraverseMutationEffects(root, finishedWork);
+      commitReconciliationEffects(finishedWork);
+      if (flags & Ref) {
+        //...
+      }
+      if (finishedWork.flags & ContentReset) {
+        //...
+      }
+      if (flags & Update) {
+        //...
+      }
+      return;
+    }
+    case HostText: {
+      recursivelyTraverseMutationEffects(root, finishedWork);
+      commitReconciliationEffects(finishedWork);
+      if (flags & Update) {
+        //...
+      }
+      return;
+    }
+    case HostRoot: {
+      recursivelyTraverseMutationEffects(root, finishedWork);
+      commitReconciliationEffects(finishedWork);
+      if (flags & Update) {
+        //...
+      }
+      return;
+    }
+    case OffscreenComponent: {
+      //...
+    }
+          //...还有多种类型
+    default: {
+      recursivelyTraverseMutationEffects(root, finishedWork);
+      commitReconciliationEffects(finishedWork);
+      return;
+    }
+  }
+}
+```
+
+而在`recursivelyTraverseMutationEffects()`中，我们直接获取当前fiber的`deletions`，也就是下面的`parentFiber.deletions`的数据，然后直接处理当前fiber的所有需要删除的children
+
+> 因为这里是深度遍历，会先处理`children`->`children.sibling`-> `parent`，因此我们先把当前fiber的所有需要删除的children处理了，那么就不需要深度遍历需要删除的children了
+
+```ts
+function recursivelyTraverseMutationEffects(root: FiberRoot, parentFiber: Fiber) {
+  var deletions = parentFiber.deletions;
+  if (deletions !== null) {
+    for (var i = 0; i < deletions.length; i++) {
+      var childToDelete = deletions[i];
+      commitDeletionEffects(root, parentFiber, childToDelete);
+    }
+  }
+
+  if (parentFiber.subtreeFlags & MutationMask) {
+    let child = parentFiber.child;
+
+    while (child !== null) {
+      commitMutationEffectsOnFiber(child, root);
+      child = child.sibling;
+    }
+  }
+}
+```
+
+从上面代码知道，处理逻辑主要集中在`commitDeletionEffects()`中
+- 先使用一个`while()`获取目前要删除的fiber的parent的真实DOM`hostParent`
+> `hostParent`是一个全局变量！！！
+- 然后触发`commitDeletionEffectsOnFiber()`
+- 然后触发`detachFiberMutation()`
+
+```ts
+function commitDeletionEffects(root, returnFiber, deletedFiber) {
+  var parent = returnFiber;
+
+  findParent: while (parent !== null) {
+    switch (parent.tag) {
+      case HostComponent: {
+        hostParent = parent.stateNode;
+        hostParentIsContainer = false;
+        break findParent;
+      }
+      case HostRoot: {
+        hostParent = parent.stateNode.containerInfo;
+        hostParentIsContainer = true;
+        break findParent;
+      }
+      case HostPortal: {
+        hostParent = parent.stateNode.containerInfo;
+        hostParentIsContainer = true;
+        break findParent;
+      }
+    }
+    parent = parent.return;
+  }
+
+  if (hostParent === null) {
+    throw new Error(
+      "Expected to find a host parent. This error is likely caused by " +
+        "a bug in React. Please file an issue."
+    );
+  }
+
+  commitDeletionEffectsOnFiber(root, returnFiber, deletedFiber);
+  hostParent = null;
+  hostParentIsContainer = false;
+
+  detachFiberMutation(deletedFiber);
+}
+```
+
+#### 3.1.3.1 commitDeletionEffectsOnFiber()
+
+在`commitDeletionEffectsOnFiber()`中，根据`deletedFiber.tag`进行了不同类型的繁杂处理
+
+虽然代码量非常多，但是我们仔细观察就会发现，其本质逻辑就是：
+
+- 非`HostComponent&HostText`类型会触发`recursivelyTraverseDeletionEffects()`，基本没做什么其他处理
+- `HostComponent`类型会先触发`safelyDetachRef`，由于没有`break`，因此后续会触发`HostText`的处理
+- `HostText`类型先触发`recursivelyTraverseDeletionEffects()`，然后触发`removeChild()`进行原生DOM的`removeChild()`移除DOM操作
+
+```ts
+function commitDeletionEffectsOnFiber(
+        finishedRoot,
+        nearestMountedAncestor,
+        deletedFiber
+) {
+  //...
+  switch (deletedFiber.tag) {
+    case HostComponent: {
+      if (!offscreenSubtreeWasHidden) {
+        safelyDetachRef(deletedFiber, nearestMountedAncestor);
+      }
+    }
+    case HostText: {
+      {
+        var prevHostParent = hostParent;
+        var prevHostParentIsContainer = hostParentIsContainer;
+        hostParent = null;
+        recursivelyTraverseDeletionEffects(
+                finishedRoot,
+                nearestMountedAncestor,
+                deletedFiber
+        );
+        hostParent = prevHostParent;
+        hostParentIsContainer = prevHostParentIsContainer;
+
+        if (hostParent !== null) {
+          // Now that all the child effects have unmounted, we can remove the
+          // node from the tree.
+          if (hostParentIsContainer) {
+            removeChildFromContainer(hostParent, deletedFiber.stateNode);
+          } else {
+            removeChild(hostParent, deletedFiber.stateNode);
+          }
+        }
+      }
+
+      return;
+    }
+
+    case FunctionComponent:
+    case ForwardRef:
+    case MemoComponent:
+    case SimpleMemoComponent: {
+      //...
+      recursivelyTraverseDeletionEffects(
+              finishedRoot,
+              nearestMountedAncestor,
+              deletedFiber
+      );
+      return;
+    }
+
+    case ClassComponent: {
+      if (!offscreenSubtreeWasHidden) {
+        safelyDetachRef(deletedFiber, nearestMountedAncestor);
+        var instance = deletedFiber.stateNode;
+
+        if (typeof instance.componentWillUnmount === "function") {
+          safelyCallComponentWillUnmount(
+                  deletedFiber,
+                  nearestMountedAncestor,
+                  instance
+          );
+        }
+      }
+
+      recursivelyTraverseDeletionEffects(
+              finishedRoot,
+              nearestMountedAncestor,
+              deletedFiber
+      );
+      return;
+    }
+
+    default: {
+      recursivelyTraverseDeletionEffects(
+              finishedRoot,
+              nearestMountedAncestor,
+              deletedFiber
+      );
+      return;
+    }
+  }
+}
+```
+
+> 因此`recursivelyTraverseDeletionEffects()`到底执行了什么呢？
+
+`recursivelyTraverseDeletionEffects()`的逻辑也非常简单，就是取出要删除的fiber的children，然后触发`commitDeletionEffectsOnFiber()`
+
+而`commitDeletionEffectsOnFiber()`就是根据不同类型进行处理的方法：
+- 遇到`HostComponent&HostText`类型时会触发`removeChild()`进行原生DOM的`removeChild()`移除DOM操作
+- 遇到非`HostComponent&HostText`类型时则会继续调用`recursivelyTraverseDeletionEffects()`取出要删除的fiber的children，然后触发`commitDeletionEffectsOnFiber()`
+
+这本质其实就是我们要先删除`parentDOM.removeChild(child)`，那么我们得先删除`childDOM.removeChild(child.child)`
+
+> 由于我们要删除`parent`这个`fiber`数据，因此面对`parent`这个`fiber`的所有children，我们都得删除，因此我们会遍历所有`child.sibling`
+
+```ts
+function recursivelyTraverseDeletionEffects(
+  finishedRoot,
+  nearestMountedAncestor,
+  parent
+) {
+  var child = parent.child;
+
+  while (child !== null) {
+    commitDeletionEffectsOnFiber(finishedRoot, nearestMountedAncestor, child);
+    child = child.sibling;
+  }
+}
+
+```
+
+#### 3.1.3.2 detachFiberMutation()
+
+
+## 3.2 删除逻辑
+
 
 
 新增、删除、复用更新属性（可能会移动）
@@ -822,22 +1249,31 @@ function updateReducer(reducer, initialArg, init) {
 <br/>
 
 
-# 4. diff算法简单解析
+# 3.4 多个元素的diff算法
 > 具体的diff算法查看下一篇文章进行了解
 
 
 
 <br/>
 
-# 5. 其他常见的useXXX源码分析
-## 5.1 useEffect
-## 5.2 useCallback
-## 5.3 useLayoutEffect
-## 5.4 useMemo
-## 5.5 useContext
+# 4. 其他常见的useXXX源码分析
+## 4.1 useEffect
+## 4.2 useCallback
+## 4.3 useLayoutEffect
+## 4.4 useMemo
+## 4.5 useContext
 > 具体的context相关分析请看下一篇文章进行了解
 
 <br/>
 
-# 6. 问题总结
-## 6.1 hook.baseQueue和hook.pending的区别是什么？
+# 5. 问题总结
+
+
+> setState如何触发更新？
+>
+> 任务优先级如何排列？用户输入？setState又产生的任务优先级？functionComponent因为setState触发的渲染？
+>
+> 跟Vue的响应式重新渲染不同，它是全量渲染，每次diff进行标记“删除”，然后渲染时触发对应的删除逻辑
+>
+
+## 5.1 hook.baseQueue和hook.pending的区别是什么？
