@@ -11173,6 +11173,7 @@
 			var newIdx = 0;
 			var nextOldFiber = null;
 
+			// 从左边到右边，从`index=0`不断递增，比较是否可以直接复用，减少diff的范围
 			for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
 				if (oldFiber.index > newIdx) {
 					nextOldFiber = oldFiber;
@@ -11220,6 +11221,7 @@
 				oldFiber = nextOldFiber;
 			}
 
+			// 新的节点已经遍历完成，旧的节点还有，进行剩余旧节点的删除工作
 			if (newIdx === newChildren.length) {
 				// We've reached the end of the new children. We can delete the rest.
 				deleteRemainingChildren(returnFiber, oldFiber);
@@ -11232,6 +11234,7 @@
 				return resultingFirstChild;
 			}
 
+			// 旧的节点已经遍历完成，新的节点还有，开始剩余新的节点的创建工作
 			if (oldFiber === null) {
 				// If we don't have any more existing children we can choose a fast path
 				// since the rest will all be insertions.
@@ -11248,9 +11251,11 @@
 						// TODO: Move out of the loop. This only happens for the first run.
 						resultingFirstChild = _newFiber;
 					} else {
+						// 构建一个新的单链表结构
 						previousNewFiber.sibling = _newFiber;
 					}
 
+					// 构建一个新的单链表结构，不停将当前fiber后移到下一个fiber
 					previousNewFiber = _newFiber;
 				}
 
@@ -11259,6 +11264,7 @@
 					pushTreeFork(returnFiber, _numberOfForks);
 				}
 
+				// 头节点
 				return resultingFirstChild;
 			} // Add all children to a key map for quick lookups.
 
