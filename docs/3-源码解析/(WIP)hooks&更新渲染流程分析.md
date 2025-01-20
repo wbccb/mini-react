@@ -805,25 +805,30 @@ function updateReducer(reducer, initialArg, init) {
 
 # 3. 多种更新类型分析
 
-更新的时候主要分为4种类型：
+更新的时候主要分为3种类型：
 - 删除节点
 - 新增节点
 - 移动节点
-- 复用节点
 
-我们接下来将根据上面4种类型进行分析
+我们接下来将根据上面3种类型进行分析
 > 比如删除节点，我们在什么阶段进行fiber删除的flag标记的？我们在什么阶段进行删除flag标记对应的dom节点的删除的？
 
-## 3.1 删除逻辑
 
-在`reconcileChildFibers()`中，我们需要判断当前是否是初次渲染的阶段，如果是初次渲染，则不用触发对应的删除逻辑 
+在`reconcileChildFibers()`中，我们需要判断当前是否是初次渲染的阶段，如果是初次渲染，则不用触发对应的删除逻辑
 
 如果是渲染更新，分为两种情况
 - 新的数据是单个元素：触发`reconcileSingleElement()`
   - 旧的数据是单个元素：根据`key`+`type`判断是否可以复用，否则删除
   - 旧的数据是Array：根据`key`+`type`找到可以复用的数据，其余都删除
-- 新的数据是Array元素：触发`reconcileChildrenArray()` => 涉及到多个元素的diff算法，下面的小节再进行详细分析
+- 新的数据是Array元素：触发`reconcileChildrenArray()` => 涉及到多个元素的diff算法
 - 新的数据为空时，直接触发`deleteRemainingChildren()`删除所有的旧节点数据
+
+## 3.1 删除逻辑
+
+- 新的数据是单个元素：触发`reconcileSingleElement()`
+  - 旧的数据是单个元素：根据`key`+`type`判断是否可以复用，否则删除
+  - 旧的数据是Array：根据`key`+`type`找到可以复用的数据，其余都删除
+
 
 ```ts
 function reconcileChildFibers(returnFiber, currentFirstChild, newChild, lanes) {
@@ -1257,6 +1262,7 @@ function detachFiberMutation(fiber) {
 
 > 节点复用的三个条件：同一层级下 + key相同 + type相同（也就是`html`的`tag`相同，都是`<div>`，都是`<span>`）
 
+新的数据是Array元素：触发`reconcileChildrenArray()` => 涉及到多个元素的diff算法
 
 ### 3.2.1 fiber标记：从左边到右边，从`index=0`不断递增，比较是否可以直接复用，减少diff的范围
 > 比如
