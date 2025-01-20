@@ -1239,6 +1239,19 @@ function recursivelyTraverseDeletionEffects(
 
 #### 3.1.3.2 detachFiberMutation()
 
+由于当前fiber已经被删除，因此可以直接切断当前fiber与双缓冲树的联系
+
+```ts
+function detachFiberMutation(fiber) {
+  var alternate = fiber.alternate;
+
+  if (alternate !== null) {
+    alternate.return = null;
+  }
+
+  fiber.return = null;
+}
+```
 
 ## 3.2 删除逻辑
 
