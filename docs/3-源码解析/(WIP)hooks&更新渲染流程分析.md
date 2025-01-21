@@ -1824,11 +1824,72 @@ function insertOrAppendPlacementNodeIntoContainer(node, before, parent) {
 
 ### 3.3 React18与Vue3的diff算法简单对比
 
-#### 3.3.1 React18 diff算法简单介绍
+> 下面Vue分析摘自以前的文章：https://segmentfault.com/a/1190000042974066
 
-#### 3.3.2 Vue3 diff算法简单介绍
+从`Vue 3.2.30`的源码可以知道，源码中有对`patchKeyedChildren()`方法进行了核心步骤的注释，摘出核心步骤的注册如下面代码块所示，可以分为5个步骤：
+- 步骤1：从头->尾，处理相同的前置元素
+- 步骤2：从尾->头，处理相同的后置元素
+- 步骤3：旧vnode已经处理完毕，但是新vnode还有元素，处理新增元素，直接进行mount
+- 步骤4：旧vnode还有剩余，但是新vnode已经处理完毕，处理已经废弃元素，直接进行unmount
+- 步骤5：最复杂的情况，处理相同的前置元素+处理相同的后置元素后，剩下的元素有新增、废弃、乱序的情况，需要复杂处理
 
-#### 3.3.3 React18与Vue3的diff算法区别
+而`React 18.3.1`的主要diff流程如下所示
+- 步骤1：从左边到右边，从`index=0`不断递增，比较是否可以直接复用，减少diff的范围
+- 步骤2：新的节点已经遍历完成，旧的节点还有，进行剩余旧节点的删除工作
+- 步骤3：旧的节点已经遍历完成，新的节点还有，开始剩余新的节点的创建工作
+- 步骤4：新的节点和旧的节点还有，进行diff复用
+- 步骤5：新的节点已经新增/移动完毕，剩下的旧节点应该删除
+
+在上面两个框架的流程概述中，我们可以发现，`Vue`增加了`从尾->头，处理相同的后置元素`的处理步骤，然后主要区别就在于`新增、废弃、乱序`的处理
+
+#### 3.3.1 Vue3中新增、废弃、乱序的处理
+
+> 下面步骤摘自以前的文章：https://segmentfault.com/a/1190000042974066
+
+- 步骤5.1：为newChildren建立索引
+- 步骤5.2：移除废弃的旧vnode + 更新能复用的旧vnode + newIndexToOldIndexMap和move的构建为下一步骤做准备
+  - 逻辑1：移除废弃的旧vnode
+  - 逻辑2：更新能复用的旧vnode
+  - 逻辑3：newIndexToOldIndexMap和move的构建为步骤5.3做准备
+- 步骤5.3：移动/新增处理
+  - 新增：判断目前新vnode是之前没有过的新vnode
+  - 移动：判断目前新vnode对应的可复用的旧vnode是否需要移动位置
+    - 流程1: 构建最长递增子序列
+    - 流程2: 根据increasingNewIndexSequence进行节点的移动
+> increasingNewIndexSequence最长递增子序列的作用：获取旧的children在新的children的相对位置顺序仍然递增的最长子序列，减少move的次数，提升性能
+
+```ts
+const increasingNewIndexSequence = moved
+    ? getSequence(newIndexToOldIndexMap)
+    : EMPTY_ARR;
+j = increasingNewIndexSequence.length - 1;
+for (i = toBePatched - 1; i >= 0; i--) {
+    const nextIndex = s2 + i;
+    const nextChild = c2[nextIndex];
+    const anchor = nextIndex + 1 < l2 ? c2[nextIndex + 1].el : parentAnchor;
+    if (newIndexToOldIndexMap[i] === 0) {
+        patch(null, nextChild, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
+    } else if (moved) {
+        if (j < 0 || i !== increasingNewIndexSequence[j]) {
+            move(nextChild, container, anchor, 2 /* REORDER */);
+        } else {
+            j--;
+        }
+    }
+}
+const move = (vnode, container, anchor, moveType, parentSuspense = null) => {
+    const { el, type, transition, children, shapeFlag } = vnode;
+    //...多种类型的数据进行不同的move处理，包括组件、Comment、Static
+    if (needTransition) {
+      //...
+    } else {
+        hostInsert(el, container, anchor);
+    }
+};
+```
+
+- 如果`increasingNewIndexSequence.length=0`，即构建不出来最长递增子序列的时候，按照上面代码块的逻辑，我们从末尾开始，使用当前新vnode后面的index作为参照，不停将旧vnode移动插入到`c2[nextIndex+1]`的前面
+- 如果`increasingNewIndexSequence.length>0`，那么遇到`i === increasingNewIndexSequence[j]`时，代表目前的`nextChild`是最长递增子序列的一个元素，由于最长递增子序列代表`旧vnode`的相关位置在`新vnode`的相关位置仍然保持递增，因此这些位于最长递增子序列的元素可以不进行move操作，直接进行j--即可
 
 
 <br/>
