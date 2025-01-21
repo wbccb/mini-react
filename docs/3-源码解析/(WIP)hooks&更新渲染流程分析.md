@@ -1264,6 +1264,42 @@ function detachFiberMutation(fiber) {
 
 新的数据是Array元素：触发`reconcileChildrenArray()` => 涉及到多个元素的diff算法
 
+```ts
+function reconcileChildrenArray(...) {
+  // 3.2.1 从左边到右边，从`index=0`不断递增，比较是否可以直接复用，减少diff的范围
+  for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
+    //...
+  }
+
+  // 3.2.2 新的节点已经遍历完成，旧的节点还有，进行剩余旧节点的删除工作
+  if (newIdx === newChildren.length) {
+    deleteRemainingChildren(returnFiber, oldFiber);
+    //...
+    return resultingFirstChild;
+  }
+
+  // 3.2.2 旧的节点已经遍历完成，新的节点还有，开始剩余新的节点的创建工作
+  if (oldFiber === null) {
+    //...
+  }
+
+  // 3.2.3 新的节点和旧的节点还有，进行diff复用
+  var existingChildren = mapRemainingChildren(returnFiber, oldFiber);
+  for (; newIdx < newChildren.length; newIdx++) {
+    //...
+  }
+
+  // 3.2.4 新的节点已经新增/移动完毕，剩下的旧节点应该删除
+  if (shouldTrackSideEffects) {
+    existingChildren.forEach(function (child) {
+      return deleteChild(returnFiber, child);
+    });
+  }
+  return resultingFirstChild;
+}
+```
+
+
 ### 3.2.1 fiber标记：从左边到右边，从`index=0`不断递增，比较是否可以直接复用，减少diff的范围
 > 比如
 >
@@ -1276,6 +1312,277 @@ function detachFiberMutation(fiber) {
 > 旧：`[4]`
 >
 > 新：`[5, 6]`
+
+
+从`newIdx = 0`开始遍历，我们要缩减的是左边的边界
+- 如果`oldFiber.index > newIdx`，说明能够左边的边界已经不能缩减了，那么我们就将`oldFiber`设置为null，最终得到的`newFiber`肯定为`null`，那么最终会触发`break`，同时使用`oldFiber = nextOldFiber`恢复数据
+> 比如旧的`[1, 2, 3, 4]`和新的`[1, 3, 3, 4]`，当旧的的`3`为`oldFiber.index=2`，新的`3`为`newIdx=1`
+
+- 如果`oldFiber.index <= newIdx`，说明还可以缩减左边的边界，继续单链表的下一个数据`nextOldFiber = oldFiber.sibling`
+- 使用`updateSlot()`检测旧的fiber是否被复用
+> `updateSlot()`先进行`key`的判断，如果`key`不一样，则肯定无法直接复用，直接返回`null` => 可能目前数据是移动了，还可以被其他节点复用，不删除旧的fiber！！！！
+> 
+> 如果`key`一样，说明是原来对应的数据，也不可能被其他节点复用了，只是可能`<tag>`变了，那么就直接创建新的fiber，然后删除掉旧的fiber！！！
+  - 如果旧的fiber能够被复用(`key`和`tag`都相同)，则直接更新旧的fiber => `newFiber`
+  - 如果旧的fiber存在但是`key`相同，说明是原来对应的数据，如果`旧的fiber为NULL`/`旧的fiber的tag不一致`，直接创建新的fiber => `newFiber`，然后后续逻辑删除旧的fiber
+  - 如果旧的fiber存在但是`key`不同，说明不是原来对应的数据 => 返回`newFiber=null` => 中断左边边界的缩减
+> 下面的小节会展开对`updateSlot()`源码的详细分析
+
+- 如果`newFiber=null`，说明无法缩减左边的边界了，直接`break`当前的循环
+- 如果`newFiber不为null`，说明是`oldFiber`和`newFiber`的`key`相同，是原来对应的数据，可能可以复用
+  - 通过`oldFiber && newFiber.alternate === null`，说明还是不能复用，是直接创建了新的`fiber` => 删除旧的`fiber`
+  - 否则就是可以复用 => 通过`lastPlacedIndex`判断是否是`move`/`insertion`，然后打上`newFiber.flags |= Placement`
+- 最终构建单链表结构：`resultingFirstChild`代表头节点，`previousNewFiber`代表前节点，可以不断`previousNewFiber.sibling = newFiber`
+
+```ts
+function reconcileChildrenArray() {
+  // 3.2.1 从左边到右边，从`index=0`不断递增，比较是否可以直接复用，减少diff的范围
+  for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
+    if (oldFiber.index > newIdx) {
+      nextOldFiber = oldFiber;
+      oldFiber = null;
+    } else {
+      nextOldFiber = oldFiber.sibling;
+    }
+    var newFiber = updateSlot(
+      returnFiber,
+      oldFiber,
+      newChildren[newIdx],
+      lanes
+    );
+
+    if (newFiber === null) {
+      if (oldFiber === null) {
+        oldFiber = nextOldFiber;
+      }
+      break;
+    }
+
+    if (shouldTrackSideEffects) {
+      if (oldFiber && newFiber.alternate === null) {
+        deleteChild(returnFiber, oldFiber);
+      }
+    }
+    lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+
+    if (previousNewFiber === null) {
+      resultingFirstChild = newFiber;
+    } else {
+      previousNewFiber.sibling = newFiber;
+    }
+    previousNewFiber = newFiber;
+    oldFiber = nextOldFiber;
+  }
+
+  // 3.2.2 新的节点已经遍历完成，旧的节点还有，进行剩余旧节点的删除工作
+  if (newIdx === newChildren.length) {
+    deleteRemainingChildren(returnFiber, oldFiber);
+    //...
+    return resultingFirstChild;
+  }
+
+  // 3.2.2 旧的节点已经遍历完成，新的节点还有，开始剩余新的节点的创建工作
+  if (oldFiber === null) {
+    //...
+  }
+
+  // 3.2.3 新的节点和旧的节点还有，进行diff复用
+  var existingChildren = mapRemainingChildren(returnFiber, oldFiber);
+  for (; newIdx < newChildren.length; newIdx++) {
+    //...
+  }
+
+  // 3.2.4 新的节点已经新增/移动完毕，剩下的旧节点应该删除
+  if (shouldTrackSideEffects) {
+    existingChildren.forEach(function (child) {
+      return deleteChild(returnFiber, child);
+    });
+  }
+  return resultingFirstChild;
+}
+```
+
+
+### 3.2.1.1 updateSlot
+
+主要分为3种情况进行处理：文本格式、Object格式（包括各种FunctionComponent、ClassComponent等等）、Array格式（Fragment）
+
+> 先进行`key`的判断，如果`key`不一样，则肯定无法直接复用，直接返回`null` => 可能目前数据是移动了，还可以被其他节点复用，不删除旧的fiber！！！！
+> 如果`key`一样，说明是原来对应的数据，也不可能被其他节点复用了，只是可能`<tag>`变了，那么就直接创建新的fiber，然后删除掉旧的fiber！！！
+
+- 先处理`newChild`是否是文本格式，由于文本数据没有`key`，因此旧的数据存在`key`时，说明是`非文本数据`->`文本数据`，无法复用，直接返回`null`
+- 然后处理`newChild`的`object`格式，只有`key`相同才有可能复用，一定不能复用时直接返回`null`，然后进入`updateTextNode()`尝试复用，如果无法复用则直接返回新创建的`fiber`
+- 然后处理`newChild`的`array`格式，新数据没有`key`，如果旧数据存在`key`，则一定不能复用，一定不能复用时直接返回`null`，然后进入`updateFragment()`尝试复用，如果无法复用则直接返回新创建的`fiber`
+
+```ts
+function updateSlot(returnFiber, oldFiber, newChild, lanes) {
+  var key = oldFiber !== null ? oldFiber.key : null;
+  if (
+    (typeof newChild === "string" && newChild !== "") ||
+    typeof newChild === "number"
+  ) {
+    if (key !== null) {
+      return null;
+    }
+
+    return updateTextNode(returnFiber, oldFiber, "" + newChild, lanes);
+  }
+
+  if (typeof newChild === "object" && newChild !== null) {
+    switch (newChild.$$typeof) {
+      case REACT_ELEMENT_TYPE: {
+        if (newChild.key === key) {
+          return updateElement(returnFiber, oldFiber, newChild, lanes);
+        } else {
+          return null;
+        }
+      }
+      case REACT_PORTAL_TYPE: {}
+      case REACT_LAZY_TYPE: {}
+    }
+
+    if (isArray(newChild) || getIteratorFn(newChild)) {
+      if (key !== null) {
+        return null;
+      }
+      return updateFragment(returnFiber, oldFiber, newChild, lanes, null);
+    }
+
+    throwOnInvalidObjectType(returnFiber, newChild);
+  }
+
+  return null;
+}
+```
+
+
+#### 3.2.1.2 updateTextNode()
+
+- 如果当前旧的fiber为空或者当前fiber不是文本数据，直接创建新的fiber文本数据
+- 如果当前旧的fiber可以被复用，使用`useFiber()`复用fiber并且更新数据，返回新的fiber文本数据
+
+```ts
+function updateTextNode(returnFiber, current, textContent, lanes) {
+  if (current === null || current.tag !== HostText) {
+    // Insert
+    var created = createFiberFromText(textContent, returnFiber.mode, lanes);
+    created.return = returnFiber;
+    return created;
+  } else {
+    // Update
+    var existing = useFiber(current, textContent);
+    existing.return = returnFiber;
+    return existing;
+  }
+}
+```
+
+
+#### 3.2.1.3 updateFragment()
+
+跟上面`updateTextNode()`逻辑基本一致
+- 如果为空或者当前的`<tag>`已经改变，则创建新的fiber，只是使用的方法从`createFiberFromText()`->`createFiberFromFragment()`
+- 如果可以复用，则使用`useFiber()`进行数据的更新
+
+```ts
+function updateFragment(returnFiber, current, fragment, lanes, key) {
+  if (current === null || current.tag !== Fragment) {
+    // Insert
+    var created = createFiberFromFragment(...);
+    created.return = returnFiber;
+    return created;
+  } else {
+    // Update
+    var existing = useFiber(current, fragment);
+    existing.return = returnFiber;
+    return existing;
+  }
+}
+```
+
+#### 3.2.1.4 updateElement()
+
+- 如果当前新的数据是`fragment`，取出`element.props.children`数组数据去触发`updateFragment()`
+- 检查旧的fiber和新的fiber的`type`是否相同，相同则进行复用，更新旧的fiber数据
+- 如果`type`不相同或者当前旧的fiber为空，则直接新建新的fiber数据
+
+```ts
+function updateElement(returnFiber, current, element, lanes) {
+  var elementType = element.type;
+
+  if (elementType === REACT_FRAGMENT_TYPE) {
+    return updateFragment(
+      returnFiber,
+      current,
+      element.props.children,
+      lanes,
+      element.key
+    );
+  }
+
+  if (current !== null) {
+    if (
+      current.elementType === elementType ||
+      (typeof elementType === "object" &&
+        elementType !== null &&
+        elementType.$$typeof === REACT_LAZY_TYPE &&
+        resolveLazy(elementType) === current.type)
+    ) {
+      // Move based on index
+      var existing = useFiber(current, element.props);
+      existing.ref = coerceRef(returnFiber, current, element);
+      existing.return = returnFiber;
+
+      return existing;
+    }
+  } // Insert
+
+  var created = createFiberFromElement(element, returnFiber.mode, lanes);
+  created.ref = coerceRef(returnFiber, current, element);
+  created.return = returnFiber;
+  return created;
+}
+```
+
+#### 3.2.1.5 placeChild()
+
+如果是初次渲染，即`shouldTrackSideEffects=false`，那么直接返回`lastPlacedIndex`即可
+
+如果不是初次渲染，那么我们需要根据判断是`move`还是`insert`数据，如果是`move`，还需要根据`lastPlaceIndex`进行位置判断
+
+
+```ts
+function placeChild(newFiber, lastPlacedIndex, newIndex) {
+  newFiber.index = newIndex;
+
+  if (!shouldTrackSideEffects) {
+    newFiber.flags |= Forked;
+    return lastPlacedIndex;
+  }
+
+  var current = newFiber.alternate;
+
+  if (current !== null) {
+    var oldIndex = current.index;
+
+    if (oldIndex < lastPlacedIndex) {
+      // This is a move.
+      newFiber.flags |= Placement;
+      return lastPlacedIndex;
+    } else {
+      // This item can stay in place.
+      return oldIndex;
+    }
+  } else {
+    // This is an insertion.
+    newFiber.flags |= Placement;
+    return lastPlacedIndex;
+  }
+}
+```
+
+上面的代码可以使用下图流程辅助理解
+![Image](https://github.com/user-attachments/assets/635b076e-d85a-453d-b807-66c2a5dc4721)
 
 
 ### 3.2.2 fiber标记：经过上面的流程，如果出现旧的节点已经没有/新的节点已经没有，那么只需要进行新增剩余节点/删除剩余节点
