@@ -1588,20 +1588,239 @@ function placeChild(newFiber, lastPlacedIndex, newIndex) {
 ### 3.2.2 fiber标记：经过上面的流程，如果出现旧的节点已经没有/新的节点已经没有，那么只需要进行新增剩余节点/删除剩余节点
 > 不需要再进行复杂的diff判断是否可以进行复用
 
+当左边边界缩减后，新的节点已经遍历完成，旧的节点还有
 
+那么就进行剩余旧节点的删除工作，直接触发`deleteRemainingChildren()`删除旧的fiber
+
+
+当左边边界缩减后，新的节点还没遍历完成，旧的节点已经没有
+
+那么就进行剩余新节点的创建工作
+- 使用`createChild()`创建新的fiber数据
+- 使用`placeChild()`进行标记：由于`newFiber.alternate为空`，因此直接`newFiber.flags |= Placement`，不考虑`lastPlacedIndex`
+
+
+```ts
+function reconcileChildrenArray() {
+  // 3.2.1 从左边到右边，从`index=0`不断递增，比较是否可以直接复用，减少diff的范围
+  for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
+    //
+  }
+
+  // 3.2.2 新的节点已经遍历完成，旧的节点还有，进行剩余旧节点的删除工作
+  if (newIdx === newChildren.length) {
+    deleteRemainingChildren(returnFiber, oldFiber);
+    //...
+    return resultingFirstChild;
+  }
+
+  // 3.2.2 旧的节点已经遍历完成，新的节点还有，开始剩余新的节点的创建工作
+  if (oldFiber === null) {
+    for (; newIdx < newChildren.length; newIdx++) {
+      var _newFiber = createChild(returnFiber, newChildren[newIdx], lanes);
+      if (_newFiber === null) {
+        continue;
+      }
+
+      lastPlacedIndex = placeChild(_newFiber, lastPlacedIndex, newIdx);
+
+      // 构建一个新的单链表结构，不停将当前fiber后移到下一个fiber
+      if (previousNewFiber === null) {
+        resultingFirstChild = _newFiber;
+      } else {
+        previousNewFiber.sibling = _newFiber;
+      }
+      previousNewFiber = _newFiber;
+    }
+    return resultingFirstChild;
+  }
+
+  // 3.2.3 新的节点和旧的节点还有，进行diff复用
+  var existingChildren = mapRemainingChildren(returnFiber, oldFiber);
+  for (; newIdx < newChildren.length; newIdx++) {
+    //...
+  }
+
+  // 3.2.4 新的节点已经新增/移动完毕，剩下的旧节点应该删除
+  if (shouldTrackSideEffects) {
+    existingChildren.forEach(function (child) {
+      return deleteChild(returnFiber, child);
+    });
+  }
+  return resultingFirstChild;
+}
+```
 
 ### 3.2.3 fiber标记：经过上面的流程，旧的节点/新的节点都还有，进行复杂的diff
 > 哪些可以复用？哪些需要新增？哪些需要删除？
 
-
-### 3.2.4 fiber标记：经过diff后，新节点已经遍历完成，旧的节点还有
-
-
-### 3.2.5 fiber标记处理：commit阶段处理Placement
-
+从下面代码可以看出
+- 使用`mapRemainingChildren()`构建oldFiber的Map数据
+- 遍历剩余的newFiber数据，从`mapRemainingChildren()`找到可以复用的fiber进行数据更新，否则直接创建新的Fiber数据
+- 删除已经复用的fiber数据，从`existingChildren`这个Map集合中删除已经复用的oldFiber数据
+- 使用`placeChild()`判断是`move`还是`insert`数据，如果是`move`，还需要根据`lastPlaceIndex`进行位置判断是否需要`newFiber.flags |= Placement`
+- 最终构建出新的fiber的单链表结构进行返回
 
 注：lastPlacedIndex是指目前遍历到的元素标记Placement的最大index！不是指目前遍历的index!
 
+
+```ts
+function reconcileChildrenArray() {
+  // 3.2.1 从左边到右边，从`index=0`不断递增，比较是否可以直接复用，减少diff的范围
+  for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
+    //
+  }
+  // 3.2.2 新的节点已经遍历完成，旧的节点还有，进行剩余旧节点的删除工作
+  if (newIdx === newChildren.length) {
+    deleteRemainingChildren(returnFiber, oldFiber);
+    //...
+    return resultingFirstChild;
+  }
+  // 3.2.2 旧的节点已经遍历完成，新的节点还有，开始剩余新的节点的创建工作
+  if (oldFiber === null) {
+    //...
+  }
+
+  // 3.2.3 新的节点和旧的节点还有，进行diff复用
+  var existingChildren = mapRemainingChildren(returnFiber, oldFiber);
+  for (; newIdx < newChildren.length; newIdx++) {
+    var _newFiber2 = updateFromMap(
+      existingChildren,
+      returnFiber,
+      newIdx,
+      newChildren[newIdx],
+      lanes
+    );
+    if (_newFiber2 !== null) {
+      if (shouldTrackSideEffects) {
+        if (_newFiber2.alternate !== null) {
+          existingChildren.delete(
+            _newFiber2.key === null ? newIdx : _newFiber2.key
+          );
+        }
+      }
+      lastPlacedIndex = placeChild(_newFiber2, lastPlacedIndex, newIdx);
+
+      if (previousNewFiber === null) {
+        resultingFirstChild = _newFiber2;
+      } else {
+        previousNewFiber.sibling = _newFiber2;
+      }
+
+      previousNewFiber = _newFiber2;
+    }
+  }
+
+  // 3.2.4 新的节点已经新增/移动完毕，剩下的旧节点应该删除
+  if (shouldTrackSideEffects) {
+    existingChildren.forEach(function (child) {
+      return deleteChild(returnFiber, child);
+    });
+  }
+  return resultingFirstChild;
+}
+```
+
+### 3.2.4 fiber标记：经过diff后，新节点已经遍历完成，旧的节点还有
+
+如果diff完成后，旧的节点还有剩余，也就是`existingChildren`这个Map数据还残留着数据，则直接删除目前的所有旧Fiber数据
+```ts
+function reconcileChildrenArray() {
+  // 3.2.1 从左边到右边，从`index=0`不断递增，比较是否可以直接复用，减少diff的范围
+  for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
+    //
+  }
+  // 3.2.2 新的节点已经遍历完成，旧的节点还有，进行剩余旧节点的删除工作
+  if (newIdx === newChildren.length) {
+    deleteRemainingChildren(returnFiber, oldFiber);
+    //...
+    return resultingFirstChild;
+  }
+  // 3.2.2 旧的节点已经遍历完成，新的节点还有，开始剩余新的节点的创建工作
+  if (oldFiber === null) {
+    //...
+  }
+  // 3.2.3 新的节点和旧的节点还有，进行diff复用
+  var existingChildren = mapRemainingChildren(returnFiber, oldFiber);
+  for (; newIdx < newChildren.length; newIdx++) {
+    //...
+  }
+  // 3.2.4 新的节点已经新增/移动完毕，剩下的旧节点应该删除
+  if (shouldTrackSideEffects) {
+    existingChildren.forEach(function (child) {
+      return deleteChild(returnFiber, child);
+    });
+  }
+  return resultingFirstChild;
+}
+```
+
+### 3.2.5 fiber标记处理：commit阶段处理Placement
+
+- 通过`getHostParentFiber()`找到`parentFiber`是`HostComponent`/`HostRoot`/`HostPortal`的parent，否则一直`parent=parent.return`
+- 通过`getHostSibling()`寻找具备`stateNode`真实DOM + 没有`Placement`标记的fiber，然后返回其`node.stateNode`
+- 使用`insertOrAppendPlacementNode()`处理各种类型fiber的DOM的插入操作，包括: FunctionComponent、HostComponent等等的插入操作
+> `insertOrAppendPlacementNode()`可以参考下面的分析
+
+
+```ts
+function commitPlacement(finishedWork) {
+  var parentFiber = getHostParentFiber(finishedWork);
+
+  switch (parentFiber.tag) {
+    case HostComponent: {
+      var parent = parentFiber.stateNode;
+      var before = getHostSibling(finishedWork);
+      insertOrAppendPlacementNode(finishedWork, before, parent);
+      break;
+    }
+
+    case HostRoot:
+    case HostPortal: {
+      var _parent = parentFiber.stateNode.containerInfo;
+      var _before = getHostSibling(finishedWork);
+      insertOrAppendPlacementNodeIntoContainer(finishedWork, _before, _parent);
+      break;
+    }
+  }
+}
+```
+
+> 注：`insertOrAppendPlacementNode()`可以参考文章`首次渲染流程分析(二)`中`4.3.1 insertOrAppendPlacementNodeIntoContainer()`，下面的分析摘自`4.3.1`
+
+当`node`是`FunctionComponent`，它是不具备`DOM`的！！！因此`isHost`=`false`，触发了第三个条件的代码
+
+我们会直接取`node.child`，也就是`FunctionComponent`中顶层元素`<div>`，然后触发`insertOrAppendPlacementNodeIntoContainer()`，这个时候`node`是`HostComponent`，具备`DOM`，因此可以执行插入操作，也就是`#root.appendChild(<div/>)`
+
+处理完`node.child`还不够，我们还得处理下`node.child.sibling`，因此可能存在着`FunctionComponent`的顶层元素是一个`<React.Fragment>`的情况，它也是一个不具备`DOM`的类型，我们需要`#root.appendChild(Fragment的childDOM)`
+
+
+```ts
+function insertOrAppendPlacementNodeIntoContainer(node, before, parent) {
+  var tag = node.tag;
+  var isHost = tag === HostComponent || tag === HostText;
+
+  if (isHost) {
+    var stateNode = node.stateNode;
+    if (before) {
+      insertInContainerBefore(parent, stateNode, before);
+    } else {
+      appendChildToContainer(parent, stateNode);
+    }
+  } else if (tag === HostPortal);
+  else {
+    var child = node.child;
+    if (child !== null) {
+      insertOrAppendPlacementNodeIntoContainer(child, before, parent);
+      var sibling = child.sibling;
+      while (sibling !== null) {
+        insertOrAppendPlacementNodeIntoContainer(sibling, before, parent);
+        sibling = sibling.sibling;
+      }
+    }
+  }
+}
+```
 
 ### 3.3 React18与Vue3的diff算法简单对比
 
