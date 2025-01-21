@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>并发更新</title>
+</head>
+
+<body>
+<div id="root"></div>
+</body>
+
+<script src='react.umd.development.js'></script>
+<script src='react-dom.umd.development.js'></script>
+<script src="babel.js"></script>
+<script type="text/babel">
+    const {useState, useEffect, useTransition} = React;
+    const {createRoot} = ReactDOM;
+
+
+    // 高计算量的组件（用于触发时间切片）
+    function HeavyComponent({ items }) {
+        const elements = [];
+        for (let i = 0; i < items; i++) {
+            elements.push(<div key={i}>Item {i}</div>);
+        }
+        return <div>{elements}</div>;
+    }
+
+    function App() {
+        const [size, setSize] = useState(1000);
+        const [isPending, startTransition] = useTransition();
+
+        const handleClick = () => {
+            // 使用 startTransition 包裹高优先级更新
+            startTransition(() => {
+                setSize(100000); // 渲染 100,000 个元素
+            });
+        };
+
+        return (
+            <div>
+                <button onClick={handleClick} disabled={isPending}>
+                    {isPending ? "Rendering..." : "Render Heavy List"}
+                </button>
+                <HeavyComponent items={size} />
+            </div>
+        );
+    }
+
+    // 启用并发模式
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+</html>

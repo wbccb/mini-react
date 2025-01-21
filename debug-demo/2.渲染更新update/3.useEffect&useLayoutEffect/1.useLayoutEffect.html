@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>useCallback</title>
+</head>
+
+<body>
+<div id="root"></div>
+</body>
+
+<script src='../../3.useXXX()/react.umd.development.js'></script>
+<script src='../../3.useXXX()/react-dom.umd.development.js'></script>
+<script src="../../3.useXXX()/babel.js"></script>
+<script type="text/babel">
+    const {useState, useCallback, useTransition, memo} = React;
+    const {createRoot} = ReactDOM;
+    // 子组件（使用 memo 避免不必要的渲染）
+    const ChildComponent = memo(({onClick}) => {
+        console.log("ChildComponent 重新渲染了！");
+        return <button onClick={onClick}>子组件按钮</button>;
+    });
+
+    function App() {
+        const [count, setCount] = useState(0);
+        const [text, setText] = useState("");
+
+        // 使用 useCallback 缓存回调函数
+        const handleClick = useCallback(() => {
+            setCount((prev) => prev + 1);
+        }, []);
+
+        return (
+            <div>
+                <h1>Count: {count}</h1>
+                <input
+                    style={width: "400px"}
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="输入内容观察子组件是否渲染"
+                />
+                <ChildComponent onClick={handleClick}/>
+            </div>
+        );
+    }
+
+    const root = createRoot(document.getElementById("root"));
+    root.render(<App/>);
+</script>
+</html>

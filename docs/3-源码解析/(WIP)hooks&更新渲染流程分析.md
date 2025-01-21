@@ -1894,17 +1894,8 @@ const move = (vnode, container, anchor, moveType, parentSuspense = null) => {
 
 <br/>
 
-# 4. 其他常见的useXXX源码分析
-## 4.1 useEffect
-## 4.2 useCallback
-## 4.3 useLayoutEffect
-## 4.4 useMemo
-## 4.5 useContext
-> 具体的context相关分析请看下一篇文章进行了解
 
-<br/>
-
-# 5. 问题总结
+# 4. 问题总结
 
 
 > setState如何触发更新？
@@ -1914,4 +1905,4 @@ const move = (vnode, container, anchor, moveType, parentSuspense = null) => {
 > 跟Vue的响应式重新渲染不同，它是全量渲染，每次diff进行标记“删除”，然后渲染时触发对应的删除逻辑
 >
 
-## 5.1 hook.baseQueue和hook.pending的区别是什么？
+## 4.1 hook.baseQueue和hook.pending的区别是什么？

@@ -1,0 +1,18 @@
+# 前言
+
+在`React 18`中，我们详细分析了各种类型，比如`HostComponent`、`FunctionComponent`的初次渲染和渲染更新的流程，但是我们还没仔细分析过`React`重要的`React Hooks`相关源码
+- 比如最常见的`useEffect()`
+- 比如性能优化经常使用的`useMemo()`、`useCallback()`
+
+在本文中，我们将针对这些常见的`hooks`，侧重于`useEffect()`和`useLayoutEffect()`，详细分析`React Hooks`初次渲染和渲染更新的流程
+
+
+# useEffect()
+
+
+# useLayoutEffect()
+
+
+# useMemo()
+
+# useCallback()
