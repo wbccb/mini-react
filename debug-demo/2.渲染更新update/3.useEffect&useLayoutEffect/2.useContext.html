@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>useContext</title>
+</head>
+
+<body>
+<div id="root"></div>
+</body>
+
+<script src="react.umd.development.js"></script>
+<script src="react-dom.umd.development.js"></script>
+<script src="babel.js"></script>
+<script type="text/babel">
+    const {useState, useCallback, useTransition, memo, useLayoutEffect, useEffect, createContext, useContext} = React;
+    const {createRoot} = ReactDOM;
+    // 1. 创建 Context
+    const ThemeContext = createContext({
+        theme: "light",
+        toggleTheme: () => {}, // 默认空函数
+    });
+
+    // 2. 顶层组件提供 Context 值
+    function App() {
+        const [theme, setTheme] = useState("light");
+
+        const toggleTheme = () => {
+            setTheme((prev) => (prev === "light" ? "dark" : "light"));
+        };
+
+        return (
+            <ThemeContext.Provider value={{ theme, toggleTheme }}>
+                <Header />
+                <MainContent />
+            </ThemeContext.Provider>
+        );
+    }
+
+    // 3. 子组件使用 Context
+    function Header() {
+        const { theme } = useContext(ThemeContext);
+        return <header>当前主题：{theme}</header>;
+    }
+
+    function MainContent() {
+        const { theme, toggleTheme } = useContext(ThemeContext);
+        return (
+            <div style={{ background: theme === "light" ? "#fff" : "#333", padding: 20 }}>
+                <button onClick={toggleTheme}>切换主题</button>
+            </div>
+        );
+    }
+
+    // 启动应用
+    const root = createRoot(document.getElementById("root"));
+    root.render(<App />);
+</script>
+</html>

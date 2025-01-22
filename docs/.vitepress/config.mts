@@ -53,15 +53,19 @@ export default defineConfig({
 				items: [
 					{
 						text: "(WIP)首次渲染流程分析(一)",
-						link: "/3-源码解析/(WIP)首次渲染流程分析(一)",
+						link: "/3-源码解析/1.(WIP)首次渲染流程分析(一)",
 					},
 					{
 						text: "(WIP)首次渲染流程分析(二)",
-						link: "/3-源码解析/(WIP)首次渲染流程分析(二)",
+						link: "/3-源码解析/2.(WIP)首次渲染流程分析(二)",
 					},
 					{
 						text: "(WIP)hooks&更新渲染流程分析",
-						link: "/3-源码解析/(WIP)hooks&更新渲染流程分析",
+						link: "/3-源码解析/3.(WIP)hooks&更新渲染流程分析",
+					},
+					{
+						text: "(WIP)常见hook源码分析",
+						link: "/3-源码解析/4.(WIP)常见hook源码分析",
 					},
 				],
 			},

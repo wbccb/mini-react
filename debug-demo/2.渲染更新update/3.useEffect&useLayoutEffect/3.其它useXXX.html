@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>useXXX</title>
+</head>
+
+<body>
+<div id="root"></div>
+</body>
+
+<script src="react.umd.development.js"></script>
+<script src="react-dom.umd.development.js"></script>
+<script src="babel.js"></script>
+<script type="text/babel">
+    const {useState, useCallback, useTransition, memo, useLayoutEffect, useEffect, createContext, useContext, useRef, useMemo} = React;
+    const {createRoot} = ReactDOM;
+    // 子组件（使用 memo 优化）
+    const Child = memo(({ onClick }) => {
+        console.log("子组件重渲染！");
+        return <button onClick={onClick}>子组件按钮</button>;
+    });
+
+    function App() {
+        const [count, setCount] = useState(0);
+        const [text, setText] = useState("");
+        const timerRef = useRef(null); // 用于存储定时器 ID
+        const [seconds, setSeconds] = useState(0);
+
+        // 使用 useMemo 缓存高计算量结果
+        const expensiveResult = useMemo(() => {
+            console.log("useMemo 重新计算！");
+            // 模拟高计算量操作（例如计算斐波那契数列）
+            const fib = (n) => (n <= 1 ? n : fib(n - 1) + fib(n - 2));
+            return fib(35); // 耗时操作
+        }, [count]); // 仅当 count 变化时重新计算
+
+        // 使用 useCallback 缓存函数
+        const handleClick = useCallback(() => {
+            setCount((prev) => prev + 1);
+        }, []); // 依赖项为空数组，函数引用不变
+
+        // 使用 useRef 存储定时器 ID
+        useEffect(() => {
+            timerRef.current = setInterval(() => {
+                setSeconds((prev) => prev + 1);
+            }, 1000);
+
+            return () => clearInterval(timerRef.current); // 清理定时器
+        }, []);
+
+        const stopTimer = () => {
+            clearInterval(timerRef.current);
+            console.log("定时器已停止，当前秒数：", seconds);
+        };
+
+        return (
+            <div>
+                <h1>计数器：{count}</h1>
+                <h2>高计算量结果：{expensiveResult}</h2>
+                <h3>定时器秒数：{seconds}</h3>
+                <input
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="输入内容观察子组件是否渲染"
+                />
+                <Child onClick={handleClick} />
+                <button onClick={stopTimer}>停止定时器</button>
+            </div>
+        );
+    }
+
+    const root = createRoot(document.getElementById("root"));
+    root.render(<App />);
+</script>
+</html>

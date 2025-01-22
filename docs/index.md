@@ -9,7 +9,7 @@ hero:
   actions:
     - theme: brand
       text: 点击进入React18的源码分析
-      link: /3-源码解析/(WIP)首次渲染流程分析(一)
+      link: /3-源码解析/1.(WIP)首次渲染流程分析(一)
     - theme: alt
       text: 点击进入mini-react的代码地址
       link: https://github.com/wbccb/mini-react

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>useLayoutEffect</title>
+</head>
+
+<body>
+<div id="root"></div>
+</body>
+
+<script src="react.umd.development.js"></script>
+<script src="react-dom.umd.development.js"></script>
+<script src="babel.js"></script>
+<script type="text/babel">
+    const {useState, useCallback, useTransition, memo, useLayoutEffect, useEffect} = React;
+    const {createRoot} = ReactDOM;
+    function App() {
+        const [color, setColor] = useState("red");
+
+        // 使用 useEffect（异步，在浏览器绘制后执行）
+        useEffect(() => {
+            console.log("useEffect 执行：当前颜色", color);
+            // 模拟一个可能引起布局变化的操作（但会有延迟）
+            const element = document.getElementById("box");
+            if (element) {
+                element.style.transform = "translateX(100px)";
+            }
+        }, [color]);
+
+        // 使用 useLayoutEffect（同步，在 DOM 更新后、浏览器绘制前执行）
+        useLayoutEffect(() => {
+            console.log("useLayoutEffect 执行：当前颜色", color);
+            // 直接操作 DOM（避免视觉闪烁）
+            const element = document.getElementById("box");
+            if (element) {
+                element.style.backgroundColor = color;
+            }
+        }, [color]);
+
+        return (
+            <div>
+                <div
+                    id="box"
+                    style={{
+                        width: "100px",
+                        height: "100px",
+                        backgroundColor: color,
+                        transition: "background-color 0.3s, transform 0.3s",
+                    }}
+                />
+                <button onClick={() => setColor(color === "red" ? "blue" : "red")}>
+                    切换颜色
+                </button>
+            </div>
+        );
+    }
+
+    const root = createRoot(document.getElementById("root"));
+    root.render(<App />);
+</script>
+</html>
