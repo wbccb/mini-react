@@ -12340,7 +12340,6 @@
 	}
 
 	function processUpdateQueue(workInProgress, props, instance, renderLanes) {
-		debugger;
 		// This is always non-null on a ClassComponent or HostRoot
 		var queue = workInProgress.updateQueue;
 		hasForceUpdate = false;

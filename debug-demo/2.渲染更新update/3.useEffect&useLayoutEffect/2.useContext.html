@@ -17,45 +17,87 @@
 <script type="text/babel">
     const {useState, useCallback, useTransition, memo, useLayoutEffect, useEffect, createContext, useContext} = React;
     const {createRoot} = ReactDOM;
+
+
+
     // 1. 创建 Context
-    const ThemeContext = createContext({
-        theme: "light",
-        toggleTheme: () => {}, // 默认空函数
+    const ThemeContext = React.createContext({
+        theme: 'light',
+        toggleTheme: () => {}, // 占位函数
     });
 
-    // 2. 顶层组件提供 Context 值
-    function App() {
-        const [theme, setTheme] = useState("light");
+    // ---------------------------
+    // 2. 三种组件使用方式
+    // ---------------------------
 
-        const toggleTheme = () => {
-            setTheme((prev) => (prev === "light" ? "dark" : "light"));
-        };
-
-        return (
-            <ThemeContext.Provider value={{ theme, toggleTheme }}>
-                <Header />
-                <MainContent />
-            </ThemeContext.Provider>
-        );
-    }
-
-    // 3. 子组件使用 Context
-    function Header() {
-        const { theme } = useContext(ThemeContext);
-        return <header>当前主题：{theme}</header>;
-    }
-
-    function MainContent() {
+    // 场景1：函数组件使用 useContext
+    function FunctionComponentDemo() {
         const { theme, toggleTheme } = useContext(ThemeContext);
         return (
-            <div style={{ background: theme === "light" ? "#fff" : "#333", padding: 20 }}>
-                <button onClick={toggleTheme}>切换主题</button>
+            <div style={{ background: theme === 'dark' ? '#333' : '#fff', padding: '20px' }}>
+                <h2>Function Component</h2>
+                <p>Current Theme: {theme}</p>
+                <button onClick={toggleTheme}>Toggle Theme</button>
             </div>
         );
     }
 
-    // 启动应用
-    const root = createRoot(document.getElementById("root"));
+    // 场景2：类组件使用 contextType
+    class ClassComponentDemo extends React.Component {
+        static contextType = ThemeContext; // 关键：绑定 Context
+
+        render() {
+            const { theme, toggleTheme } = this.context;
+            return (
+                <div style={{ background: theme === 'dark' ? '#333' : '#fff', padding: '20px' }}>
+                    <h2>Class Component</h2>
+                    <p>Current Theme: {theme}</p>
+                    <button onClick={toggleTheme}>Toggle Theme</button>
+                </div>
+            );
+        }
+    }
+
+    // 场景3：Context.Consumer 组件
+    function ConsumerComponentDemo() {
+        return (
+            <ThemeContext.Consumer>
+                {({ theme, toggleTheme }) => (
+                    <div style={{ background: theme === 'dark' ? '#333' : '#fff', padding: '20px' }}>
+                        <h2>Context.Consumer Component</h2>
+                        <p>Current Theme: {theme}</p>
+                        <button onClick={toggleTheme}>Toggle Theme</button>
+                    </div>
+                )}
+            </ThemeContext.Consumer>
+        );
+    }
+
+    // ---------------------------
+    // 3. 提供 Context 的父组件
+    // ---------------------------
+    function App() {
+        const [theme, setTheme] = useState('light');
+
+        // 定义切换主题的函数
+        const toggleTheme = () => {
+            setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+        };
+
+        return (
+            <ThemeContext.Provider value={{ theme, toggleTheme }}>
+                <FunctionComponentDemo />
+                <ClassComponentDemo />
+                <ConsumerComponentDemo />
+            </ThemeContext.Provider>
+        );
+    }
+
+    // ---------------------------
+    // 4. 渲染到 DOM
+    // ---------------------------
+    const root = createRoot(document.getElementById('root'));
     root.render(<App />);
+
 </script>
 </html>
