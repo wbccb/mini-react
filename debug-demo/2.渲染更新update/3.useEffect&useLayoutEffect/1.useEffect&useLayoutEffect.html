@@ -17,6 +17,7 @@
 <script type="text/babel">
     const {useState, useCallback, useTransition, memo, useLayoutEffect, useEffect} = React;
     const {createRoot} = ReactDOM;
+
     function App() {
         const [color, setColor] = useState("red");
 
@@ -28,6 +29,10 @@
             if (element) {
                 element.style.transform = "translateX(100px)";
             }
+
+            return () => {
+                console.log("useLayoutEffect destroy");
+            }
         }, [color]);
 
         // 使用 useLayoutEffect（同步，在 DOM 更新后、浏览器绘制前执行）
@@ -38,7 +43,40 @@
             if (element) {
                 element.style.backgroundColor = color;
             }
+
+            return () => {
+                console.log("useLayoutEffect destroy");
+            }
         }, [color]);
+
+
+        class Counter extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { count: 0 };
+            }
+
+            handleClick = () => {
+                // 触发 setState 并传入回调函数
+                this.setState(
+                    { count: this.state.count + 1 },
+                    () => {
+                        console.error('Effect.callback executed!', this.state.count);
+                    }
+                );
+            };
+
+            render() {
+                return (
+                    <div>
+                        <p>Count: {this.state.count}</p>
+                        <button onClick={this.handleClick}>Increment</button>
+                    </div>
+                );
+            }
+        }
+
+
 
         return (
             <div>
@@ -54,11 +92,13 @@
                 <button onClick={() => setColor(color === "red" ? "blue" : "red")}>
                     切换颜色
                 </button>
+
+                <Counter/>
             </div>
         );
     }
 
     const root = createRoot(document.getElementById("root"));
-    root.render(<App />);
+    root.render(<App/>);
 </script>
 </html>

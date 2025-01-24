@@ -10844,7 +10844,6 @@
 				return;
 			}
 
-			debugger;
 			var deletions = returnFiber.deletions;
 
 			if (deletions === null) {
@@ -11500,7 +11499,6 @@
 			var key = element.key;
 			var child = currentFirstChild;
 
-			debugger;
 			while (child !== null) {
 				// TODO: If key === null and child.key === null, then this only applies to
 				// the first item in the list.
