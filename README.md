@@ -35,6 +35,7 @@
 ### 难点分析
 
 - [Scheduler实现思路.md](https://github.com/wbccb/mini-react/blob/main/docs/2-手写代码/Scheduler实现思路.md)
+- [render&commit阶段.md](https://github.com/wbccb/mini-react/blob/main/docs/2-手写代码/render&commit阶段.md)
 
 ### 手写代码
 
@@ -45,9 +46,19 @@
 
 ## 源码解析
 
+- (WIP)首次渲染流程分析(一)
+- (WIP)首次渲染流程分析(二)
+- (WIP)hooks&更新渲染流程分析
+- (WIP)常见hook源码分析
+- (TODO)合成事件
+- (TODO)lanes模型
+- (TODO)并发模式下的渲染更新流程分析
 
-
-
+## 第三方库源码
+- (TODO)mobx源码解析
+- (TODO)redux源码解析
+- (TODO)zustand源码解析
+- (TODO)react-router源码解析
 
 
 # 参考
