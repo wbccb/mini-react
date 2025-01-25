@@ -11808,6 +11808,7 @@
 							}
 						}
 
+						debugger;
 						fiber.lanes = mergeLanes(fiber.lanes, renderLanes);
 						var alternate = fiber.alternate;
 
@@ -11889,28 +11890,28 @@
 	}
 
 	function prepareToReadContext(workInProgress, renderLanes) {
+		debugger;
 		currentlyRenderingFiber = workInProgress;
 		lastContextDependency = null;
 		lastFullyObservedContext = null;
 		var dependencies = workInProgress.dependencies;
 
 		if (dependencies !== null) {
-			{
-				var firstContext = dependencies.firstContext;
+			var firstContext = dependencies.firstContext;
 
-				if (firstContext !== null) {
-					if (includesSomeLane(dependencies.lanes, renderLanes)) {
-						// Context list has a pending update. Mark that this fiber performed work.
-						markWorkInProgressReceivedUpdate();
-					} // Reset the work-in-progress list
+			if (firstContext !== null) {
+				if (includesSomeLane(dependencies.lanes, renderLanes)) {
+					// Context list has a pending update. Mark that this fiber performed work.
+					markWorkInProgressReceivedUpdate();
+				} // Reset the work-in-progress list
 
-					dependencies.firstContext = null;
-				}
+				dependencies.firstContext = null;
 			}
 		}
 	}
 
 	function readContext(context) {
+		debugger;
 		var value = context._currentValue;
 
 		if (lastFullyObservedContext === context);
@@ -12293,6 +12294,8 @@
 	}
 
 	function getStateFromUpdate(workInProgress, queue, update, prevState, nextProps, instance) {
+		debugger;
+
 		switch (update.tag) {
 			case ReplaceState: {
 				var payload = update.payload;
@@ -12312,6 +12315,7 @@
 			// Intentional fallthrough
 
 			case UpdateState: {
+				debugger;
 				var _payload = update.payload;
 				var partialState;
 
@@ -17492,20 +17496,20 @@
 
 		pushProvider(workInProgress, context, newValue);
 
-		{
-			if (oldProps !== null) {
-				var oldValue = oldProps.value;
+		if (oldProps !== null) {
+			var oldValue = oldProps.value;
 
-				if (objectIs(oldValue, newValue)) {
-					// No change. Bailout early if children are the same.
-					if (oldProps.children === newProps.children && !hasContextChanged()) {
-						return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
-					}
-				} else {
-					// The context value changed. Search for matching consumers and schedule
-					// them to update.
-					propagateContextChange(workInProgress, context, renderLanes);
+			console.log("updateContextProvider", oldValue, newValue);
+
+			if (objectIs(oldValue, newValue)) {
+				// No change. Bailout early if children are the same.
+				if (oldProps.children === newProps.children && !hasContextChanged()) {
+					return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
 				}
+			} else {
+				// The context value changed. Search for matching consumers and schedule
+				// them to update.
+				propagateContextChange(workInProgress, context, renderLanes);
 			}
 		}
 
@@ -17945,9 +17949,11 @@
 				return updateProfiler(current, workInProgress, renderLanes);
 
 			case ContextProvider:
+				console.error("beginWork case ContextProvider", current, workInProgress, renderLanes);
 				return updateContextProvider(current, workInProgress, renderLanes);
 
 			case ContextConsumer:
+				console.error("beginWork case ContextConsumer", current, workInProgress, renderLanes);
 				return updateContextConsumer(current, workInProgress, renderLanes);
 
 			case MemoComponent: {
@@ -23896,6 +23902,7 @@
 					if (typeof type === "object" && type !== null) {
 						switch (type.$$typeof) {
 							case REACT_PROVIDER_TYPE:
+								debugger;
 								fiberTag = ContextProvider;
 								break getTag;
 
