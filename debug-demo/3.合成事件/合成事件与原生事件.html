@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+<div id="root"></div>
+</body>
+
+<script src='react.umd.development.js'></script>
+<script src='react-dom.umd.development.js'></script>
+<script src="babel.js"></script>
+<script type="text/babel">
+    const {useState, useCallback, useTransition, memo, useLayoutEffect, useEffect, createContext, useContext, useRef} = React;
+    const EventDebugDemo = () => {
+        const outerRef = useRef();
+        const innerRef = useRef();
+
+        useEffect(() => {
+            // 原生事件绑定
+            const addNativeListeners = () => {
+                const outer = outerRef.current;
+                const inner = innerRef.current;
+
+                outer.addEventListener('click', () => {
+                    console.log('outer 原生冒泡事件');
+                }, false);
+
+                outer.addEventListener('click', () => {
+                    console.log('outer 原生捕获事件');
+                }, true);
+
+                inner.addEventListener('click', () => {
+                    console.log('inner 原生冒泡事件');
+                }, false);
+
+                inner.addEventListener('click', () => {
+                    console.log('inner 原生捕获事件');
+                }, true);
+            };
+
+            addNativeListeners();
+        }, []);
+
+        // 合成事件处理函数
+        const handleSyntheticBubble = (e) => {
+            console.log('inner 合成冒泡事件');
+            // 测试异步访问事件属性
+            setTimeout(() => {
+                console.log('异步访问:', e.type); // React 18 无需 persist()
+            }, 0);
+        };
+
+        const handleSyntheticCapture = (e) => {
+            console.log('inner 合成捕获事件');
+            // 阻止合成事件传播
+            // e.stopPropagation();
+        };
+
+        return (
+            <div
+                ref={outerRef}
+                onClickCapture={() => console.log('outer 合成捕获事件')}
+                onClick={() => console.log('outer 合成冒泡事件')}
+            >
+                <div
+                    ref={innerRef}
+                    onClick={handleSyntheticBubble}
+                    onClickCapture={handleSyntheticCapture}
+                    style={{ width: 100, height: 100, background: 'lightcoral' }}
+                >
+                    点击区域（调试目标）
+                </div>
+            </div>
+        );
+    };
+
+    const domNode = document.getElementById('root');
+    const root = ReactDOM.createRoot(domNode);
+    root.render(<EventDebugDemo/>);
+</script>
+</html>
