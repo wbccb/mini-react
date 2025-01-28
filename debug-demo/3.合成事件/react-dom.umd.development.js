@@ -8060,6 +8060,7 @@
 		accumulateTargetOnly,
 		nativeEvent,
 	) {
+		debugger;
 		var captureName = reactName !== null ? reactName + "Capture" : null;
 		var reactEventName = inCapturePhase ? captureName : reactName;
 		var listeners = [];

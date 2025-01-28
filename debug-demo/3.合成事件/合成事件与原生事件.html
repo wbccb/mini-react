@@ -65,7 +65,7 @@
             <div
                 ref={outerRef}
                 onClickCapture={() => console.log('outer 合成捕获事件')}
-                onClick={() => console.log('outer 合成冒泡事件')}
+                onClick={() => {debugger; console.log('outer 合成冒泡事件')}}
             >
                 <div
                     ref={innerRef}
