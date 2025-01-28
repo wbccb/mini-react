@@ -4873,15 +4873,12 @@
 		if (!_enabled) {
 			return;
 		}
-
-		{
-			dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay(
-				domEventName,
-				eventSystemFlags,
-				targetContainer,
-				nativeEvent,
-			);
-		}
+		dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay(
+			domEventName,
+			eventSystemFlags,
+			targetContainer,
+			nativeEvent,
+		);
 	}
 
 	function dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay(

@@ -67,6 +67,10 @@ export default defineConfig({
 						text: "(WIP)常见hook源码分析",
 						link: "/3-源码解析/4.(WIP)常见hook源码分析",
 					},
+					{
+						text: "(WIP)合成事件",
+						link: "/3-源码解析/5.(WIP)合成事件",
+					},
 				],
 			},
 		],
