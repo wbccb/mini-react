@@ -11,7 +11,7 @@ import {
 import { State, FiberClassUpdateQueue } from "./ReactFiberClassUpdateQueue";
 import { ConcurrentMode, NoMode, TypeOfMode } from "./ReactTypeOfMode";
 import { Lanes, NoLanes } from "./ReactFiberLane";
-import { Flags, NoFlags } from "./ReactFiberFlags";
+import { Flags, NoFlags, StaticMask } from "./ReactFiberFlags";
 import { REACT_FRAGMENT_TYPE, ReactElement } from "shared";
 import { Fiber } from "./ReactInternalTypes";
 
@@ -143,4 +143,33 @@ class FiberNode {
 	}
 }
 
-export { FiberNode, createFiber, createFiberFromElement, createFiberFromText };
+function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
+	let workInProgress = current.alternate;
+	if (workInProgress === null) {
+		workInProgress = createFiber(current.tag, pendingProps, null, current.mode);
+		workInProgress.stateNode = current.stateNode;
+
+		workInProgress.alternate = current; // workInProgress和current相关邦定
+		current.alternate = workInProgress;
+	}
+
+	// TODO 为什么要 & StaticMask?
+	workInProgress.flags = current.flags & StaticMask;
+	workInProgress.childLanes = current.childLanes;
+	workInProgress.lanes = current.lanes;
+
+	workInProgress.child = current.child;
+	workInProgress.memoizedState = current.memoizedState;
+	workInProgress.updateQueue = current.updateQueue;
+
+	workInProgress.sibling = current.sibling;
+	return workInProgress;
+}
+
+export {
+	FiberNode,
+	createFiber,
+	createFiberFromElement,
+	createFiberFromText,
+	createWorkInProgress,
+};

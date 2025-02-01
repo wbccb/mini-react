@@ -24,7 +24,7 @@ import {
 	scheduleCallback,
 	cancelCallback,
 } from "shared";
-import { createFiber } from "./ReactFiber";
+import { createFiber, createWorkInProgress } from "./ReactFiber";
 import {
 	BeforeMutationMask,
 	LayoutMask,
@@ -246,29 +246,6 @@ function prepareFreshStack(root: FiberRoot, lanes: Lanes) {
 
 	finishQueueingConcurrentUpdates();
 	return rootWorkInProgress;
-}
-
-function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
-	let workInProgress = current.alternate;
-	if (workInProgress === null) {
-		workInProgress = createFiber(current.tag, pendingProps, null, current.mode);
-		workInProgress.stateNode = current.stateNode;
-
-		workInProgress.alternate = current; // workInProgress和current相关邦定
-		current.alternate = workInProgress;
-	}
-
-	// TODO 为什么要 & StaticMask?
-	workInProgress.flags = current.flags & StaticMask;
-	workInProgress.childLanes = current.childLanes;
-	workInProgress.lanes = current.lanes;
-
-	workInProgress.child = current.child;
-	workInProgress.memoizedState = current.memoizedState;
-	workInProgress.updateQueue = current.updateQueue;
-
-	workInProgress.sibling = current.sibling;
-	return workInProgress;
 }
 
 function workLoopSync() {
