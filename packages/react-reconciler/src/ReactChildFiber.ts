@@ -2,11 +2,24 @@ import { Fiber } from "./ReactInternalTypes";
 import { Lanes } from "./ReactFiberLane";
 import { getIteratorFn, REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE, ReactElement } from "shared";
 import { createFiberFromElement, createFiberFromText, createWorkInProgress } from "./ReactFiber";
-import { Forked, Placement } from "./ReactFiberFlags";
+import { ChildDeletion, Forked, Placement } from "./ReactFiberFlags";
 import { Fragment } from "./ReactWorkTags";
 
 function ChildReconciler(shouldTrackSideEffects: boolean) {
-	function deleteChild(parentFiber: Fiber, childFiber: Fiber) {}
+	function deleteChild(parentFiber: Fiber, childFiber: Fiber) {
+		if (!shouldTrackSideEffects) {
+			// 初次渲染
+			return;
+		}
+
+		const deletions = parentFiber.deletions;
+		if (deletions === null) {
+			parentFiber.deletions = [childFiber];
+			parentFiber.flags = parentFiber.flags | ChildDeletion;
+		} else {
+			deletions.push(childFiber);
+		}
+	}
 	function deleteRemainingChildren(parentFiber: Fiber, childFiber: Fiber | null) {}
 
 	function useFiber(fiber: Fiber, pendingProps: Record<string, any>): Fiber {
@@ -51,10 +64,6 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 						const newFiber = useFiber(oldChild, newChild.props);
 						newFiber.return = parentFiber;
 						return newFiber;
-
-						// const newFiber: Fiber = createFiberFromElement(newChild, parentFiber.mode, lanes);
-						// newFiber.return = parentFiber;
-						// return newFiber;
 					}
 				}
 
@@ -65,6 +74,11 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 
 			oldChild = oldChild.sibling;
 		}
+
+		// 如果没有找到可以复用的元素，则直接创建一个新的fiebr元素
+		const newFiber = createFiberFromElement(newChild, parentFiber.mode, lanes);
+		newFiber.return = parentFiber;
+		return newFiber;
 	}
 
 	function placeSingleChild(newFiber: Fiber): Fiber {
