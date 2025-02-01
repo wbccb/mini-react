@@ -20,7 +20,19 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 			deletions.push(childFiber);
 		}
 	}
-	function deleteRemainingChildren(parentFiber: Fiber, childFiber: Fiber | null) {}
+	function deleteRemainingChildren(parentFiber: Fiber, childFiber: Fiber | null) {
+		if (!shouldTrackSideEffects) {
+			// 初次渲染
+			return null;
+		}
+		let deleteFiber = childFiber;
+		while (deleteFiber !== null) {
+			deleteChild(parentFiber, deleteFiber);
+			deleteFiber = deleteFiber.sibling;
+		}
+
+		return null;
+	}
 
 	function useFiber(fiber: Fiber, pendingProps: Record<string, any>): Fiber {
 		const clone = createWorkInProgress(fiber, pendingProps);
