@@ -1,22 +1,69 @@
 import { Fiber } from "./ReactInternalTypes";
 import { Lanes } from "./ReactFiberLane";
 import { getIteratorFn, REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE, ReactElement } from "shared";
-import { createFiberFromElement, createFiberFromText } from "./ReactFiber";
+import { createFiberFromElement, createFiberFromText, createWorkInProgress } from "./ReactFiber";
 import { Forked, Placement } from "./ReactFiberFlags";
+import { Fragment } from "./ReactWorkTags";
 
 function ChildReconciler(shouldTrackSideEffects: boolean) {
+	function deleteChild(parentFiber: Fiber, childFiber: Fiber) {}
+	function deleteRemainingChildren(parentFiber: Fiber, childFiber: Fiber | null) {}
+
+	function useFiber(fiber: Fiber, pendingProps: Record<string, any>): Fiber {
+		const clone = createWorkInProgress(fiber, pendingProps);
+		clone.index = 0;
+		clone.sibling = null;
+		return clone;
+	}
 	function reconcileSingleElement(
 		parentFiber: Fiber,
 		oldFiberFirstChild: Fiber | null,
 		newChild: ReactElement,
 		lanes: Lanes,
 	): Fiber {
-		if (newChild.type === REACT_FRAGMENT_TYPE) {
-			return {} as Fiber;
-		} else {
-			const newFiber: Fiber = createFiberFromElement(newChild, parentFiber.mode, lanes);
-			newFiber.return = parentFiber;
-			return newFiber;
+		// 新的newChild是一个元素，不是数组
+		// 旧的oldFiberFirstChild可能是一个数组，也可能是一个元素
+		let oldChild = oldFiberFirstChild;
+		while (oldChild !== null) {
+			// 根据key找到原来的元素
+			if (oldChild.key !== newChild.key) {
+				// 删除旧的元素
+				deleteChild(parentFiber, oldChild);
+			} else {
+				// 先处理type等于REACT_FRAGMENT_TYPE的特殊结构，因为我们需要拿到props.children作为元素去继承
+				if (newChild.type === REACT_FRAGMENT_TYPE) {
+					if (oldChild.tag === Fragment) {
+						// 如果两个type相同，则进行复用，跟下面的逻辑一致
+
+						deleteRemainingChildren(parentFiber, oldChild.sibling);
+
+						const newFiber = useFiber(oldChild, newChild.props.children);
+						newFiber.return = parentFiber;
+						return newFiber;
+					}
+				} else {
+					if (newChild.type === oldChild.type) {
+						// 由于这里直接return，因此需要删除其余元素
+						deleteRemainingChildren(parentFiber, oldChild.sibling);
+
+						// 直接复用旧的元素，进行数据更新
+
+						const newFiber = useFiber(oldChild, newChild.props);
+						newFiber.return = parentFiber;
+						return newFiber;
+
+						// const newFiber: Fiber = createFiberFromElement(newChild, parentFiber.mode, lanes);
+						// newFiber.return = parentFiber;
+						// return newFiber;
+					}
+				}
+
+				// 既然key相同，那么这个元素就是新旧元素，其余元素可以直接删除
+				deleteRemainingChildren(parentFiber, oldChild);
+				break;
+			}
+
+			oldChild = oldChild.sibling;
 		}
 	}
 
