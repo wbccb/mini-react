@@ -11,7 +11,21 @@ import {
 	Snapshot,
 	Update,
 } from "./ReactFiberFlags";
-import { DehydratedFragment, HostComponent, HostPortal, HostRoot, HostText } from "./ReactWorkTags";
+import {
+	ClassComponent,
+	DehydratedFragment,
+	FunctionComponent,
+	HostComponent,
+	HostPortal,
+	HostRoot,
+	HostText,
+} from "./ReactWorkTags";
+import {
+	Instance,
+	removeChild,
+	removeChildFromContainer,
+} from "react-dom/src/client/ReactDOMHostConfig";
+import { FiberNode } from "./ReactFiber";
 
 let nextEffect: Fiber | null = null;
 
@@ -75,6 +89,7 @@ function recursivelyTraverseMutationEffects(root: FiberRoot, parentFiber: Fiber)
 		for (var i = 0; i < deletions.length; i++) {
 			var childToDelete = deletions[i];
 			commitDeletionEffects(root, parentFiber, childToDelete);
+			// TODO 不用将fiber.ChildDeletion去掉？或者deletions置为空？？
 		}
 	}
 
@@ -99,8 +114,99 @@ function commitReconciliationEffects(finishedWork: Fiber) {
 	}
 }
 
-function commitDeletionEffects(root: FiberRoot, parentFiber: Fiber, deleteFiber: Fiber) {
-	// TODO 后续完善
+let hostParent: Instance | null = null;
+let hostParentIsContainer: boolean = false;
+
+function commitDeletionEffects(root: FiberRoot, parentFiber: Fiber, deletedFiber: Fiber) {
+	let parent: FiberNode | null = parentFiber;
+	findParent: while (parent !== null) {
+		switch (parent.tag) {
+			case HostComponent: {
+				hostParent = parent.stateNode;
+				hostParentIsContainer = false;
+				break findParent;
+			}
+			case HostRoot: {
+				hostParent = parent.stateNode.containerInfo;
+				hostParentIsContainer = true;
+				break findParent;
+			}
+		}
+		parent = parent.return;
+	}
+
+	commitDeletionEffectsOnFiber(root, parentFiber, deletedFiber);
+
+	hostParent = null;
+	hostParentIsContainer = false;
+}
+
+function commitDeletionEffectsOnFiber(root: FiberRoot, parentFiber: Fiber, deletedFiber: Fiber) {
+	// 如果当前类型是HostComponent，直接删除parentDom.removeChild(childDom)即可
+	// 如果当前类型是FunctionComponent，我们需要触发对应的effect，然后拿到fiber.child(因为FunctionComponent这个fiber是不具备DOM的)才是它的DOM，甚至有可能这个fiber.child是一个数组，也就是多个DOM，我们需要遍历所有DOM进行removeChild()
+
+	// 根据fiber.tag进行不同的处理方式，遇到HostComponent & HostText才启动删除工作
+	switch (deletedFiber.tag) {
+		// @ts-expect-error: 这里故意先执行HostComponent -> HostText
+		case HostComponent: {
+			safelyDetachRef(deletedFiber, parentFiber);
+		}
+		case HostText: {
+			const prevHostParent = hostParent;
+			const prevHostParentIsContainer = hostParentIsContainer;
+
+			// react源码注释：我们只需要移除最近的宿主子节点。将宿主父节点，在堆栈上设置为 `null`，以指示嵌套子节点不需要被移除
+			// TODO 暂时不是很懂什么场景，以后再补充注释
+			hostParent = null;
+			recursivelyTraverseDeletionEffects(root, parentFiber, deletedFiber);
+
+			hostParent = prevHostParent;
+			hostParentIsContainer = prevHostParentIsContainer;
+
+			if (hostParent !== null) {
+				if (hostParentIsContainer) {
+					removeChildFromContainer(hostParent, deletedFiber.stateNode);
+				} else {
+					removeChild(hostParent, deletedFiber.stateNode);
+				}
+			}
+			return;
+		}
+		case ClassComponent: {
+			const instance = deletedFiber.stateNode;
+			if (typeof instance.componentWillUnmount === "function") {
+				instance.props = deletedFiber.memoizedProps;
+				instance.state = deletedFiber.memoizedState;
+				instance.componentWillUnmount();
+			}
+
+			recursivelyTraverseDeletionEffects(root, parentFiber, deletedFiber);
+			return;
+		}
+		case FunctionComponent: {
+			// TODO 处理Function中注册的useEffect集合，后续再完善
+
+			recursivelyTraverseDeletionEffects(root, parentFiber, deletedFiber);
+			return;
+		}
+		default:
+			recursivelyTraverseDeletionEffects(root, parentFiber, deletedFiber);
+			return;
+	}
+}
+
+function safelyDetachRef(current: Fiber, nearestMountedAncestor: Fiber | null) {}
+
+function recursivelyTraverseDeletionEffects(
+	root: FiberRoot,
+	parentFiber: Fiber,
+	deletedFiber: Fiber,
+) {
+	let child = deletedFiber.child;
+	while (child !== null) {
+		commitDeletionEffectsOnFiber(root, parentFiber, child);
+		child = child.sibling;
+	}
 }
 
 function commitPlacement(finishedWork: Fiber) {
