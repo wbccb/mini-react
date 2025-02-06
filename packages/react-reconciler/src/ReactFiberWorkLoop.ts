@@ -14,16 +14,21 @@ import {
 import { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { ConcurrentMode, NoMode } from "./ReactTypeOfMode";
 import {
+	ContinuousEventPriority,
 	DefaultEventPriority,
+	DiscreteEventPriority,
 	getCurrentUpdatePriority,
+	IdleEventPriority,
 	lanesToEventPriority,
 } from "./ReactEventPriorities";
-import { getCurrentEventPriority } from "react-dom/client";
 import {
+	ImmediatePriority as ImmediateSchedulerPriority,
+	UserBlockingPriority as UserBlockingSchedulerPriority,
 	NormalPriority as NormalSchedulerPriority,
-	scheduleCallback,
-	cancelCallback,
+	IdlePriority as IdleSchedulerPriority,
 } from "shared";
+import { getCurrentEventPriority } from "react-dom/client";
+import { scheduleCallback, cancelCallback, IdlePriority, UserBlockingPriority } from "shared";
 import { createFiber, createWorkInProgress } from "./ReactFiber";
 import {
 	BeforeMutationMask,
@@ -135,8 +140,17 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
 	// 从nextLanes的lanes中取出优先级最高的lane，判断属于哪个eventLane
 	// 将eventLane -> 转化为：xxxPriority
 	switch (lanesToEventPriority(nextLanes)) {
+		case DiscreteEventPriority:
+			schedulerPriorityLevel = ImmediateSchedulerPriority;
+			break;
+		case ContinuousEventPriority:
+			schedulerPriorityLevel = UserBlockingSchedulerPriority;
+			break;
 		case DefaultEventPriority:
 			schedulerPriorityLevel = NormalSchedulerPriority;
+			break;
+		case IdleEventPriority:
+			schedulerPriorityLevel = IdleSchedulerPriority;
 			break;
 		default:
 			schedulerPriorityLevel = NormalSchedulerPriority;
