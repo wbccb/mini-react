@@ -12,7 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "react": "^18.3.1",
+    "react": "workspace:*",
     "react-dom": "workspace:*"
   },
   "devDependencies": {

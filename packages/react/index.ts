@@ -19,5 +19,6 @@
 
 // 简化上面的代码为：
 import { useReducer, useState } from "react-reconciler";
+import { Component } from "react";
 
-export { useReducer, useState };
+export { useReducer, useState, Component };
