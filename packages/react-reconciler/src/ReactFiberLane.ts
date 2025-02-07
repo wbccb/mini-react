@@ -130,7 +130,70 @@ export function markStarvedLanesAsExpired() {
 	// 检查root.pendingLanes是否存在lane一直没执行，将它从pendingLanes移动到root.expiredLanes
 	// TODO 并发源码研究彻底后再来完善
 }
+
+function getHighestPriorityLanes(lanes: Lanes | Lane): Lanes {
+	switch (getHighestPriorityLane(lanes)) {
+		case SyncLane:
+			return SyncLane;
+		case InputContinuousHydrationLane:
+			return InputContinuousHydrationLane;
+		case InputContinuousLane:
+			return InputContinuousLane;
+		case DefaultHydrationLane:
+			return DefaultHydrationLane;
+		case DefaultLane:
+			return DefaultLane;
+		case TransitionHydrationLane:
+			return TransitionHydrationLane;
+		case TransitionLane1:
+		case TransitionLane2:
+		case TransitionLane3:
+		case TransitionLane4:
+		case TransitionLane5:
+		case TransitionLane6:
+		case TransitionLane7:
+		case TransitionLane8:
+		case TransitionLane9:
+		case TransitionLane10:
+		case TransitionLane11:
+		case TransitionLane12:
+		case TransitionLane13:
+		case TransitionLane14:
+		case TransitionLane15:
+		case TransitionLane16:
+			return lanes & TransitionLanes;
+		case RetryLane1:
+		case RetryLane2:
+		case RetryLane3:
+		case RetryLane4:
+		case RetryLane5:
+			return lanes & RetryLanes;
+		case SelectiveHydrationLane:
+			return SelectiveHydrationLane;
+		case IdleHydrationLane:
+			return IdleHydrationLane;
+		case IdleLane:
+			return IdleLane;
+		case OffscreenLane:
+			return OffscreenLane;
+		default:
+			return lanes;
+	}
+}
+
 export function getNextLanes(root: FiberRoot, wipLanes: Lanes): Lanes {
 	// TODO 比较复杂，后续完善
-	return NoLanes;
+	let pendingLanes = root.pendingLanes;
+
+	if (pendingLanes === NoLanes) {
+		return NoLanes;
+	}
+
+	const nextLanes = getHighestPriorityLanes(pendingLanes);
+	return nextLanes;
+}
+
+export function markRootFinished(root: FiberRoot, remainingLanes: Lane) {
+	root.pendingLanes = remainingLanes;
+	root.expiredLanes &= remainingLanes;
 }

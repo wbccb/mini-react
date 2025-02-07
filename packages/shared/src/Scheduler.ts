@@ -11,6 +11,7 @@ import {
 	IDLE_PRIORITY_TIMEOUT,
 } from "./SchedulerPriorities";
 import { MinHeap, Task } from "./MinHeap";
+import { frameYieldMs } from "./SchedulerFeatureFlags";
 
 type Lane = number;
 let getCurrentTime: () => number;
@@ -42,7 +43,6 @@ let taskQueue = new MinHeap();
 
 function scheduleCallback(priorityLevel: Lane, callback: any, options?: { delay: number }) {
 	let currentTime = getCurrentTime();
-	let startTime = currentTime;
 
 	// 处理开始时间startTime
 	if (options && options.delay && typeof options.delay === "number") {
@@ -72,6 +72,7 @@ function scheduleCallback(priorityLevel: Lane, callback: any, options?: { delay:
 			break;
 	}
 	const expirationTime = startTime + timeout;
+	console.error("expirationTime", expirationTime);
 
 	// 新建task
 	const newTask: Task = {
@@ -82,6 +83,8 @@ function scheduleCallback(priorityLevel: Lane, callback: any, options?: { delay:
 		expirationTime,
 		sortIndex: -1,
 	};
+
+	console.log("创建Task，对应的回调函数为", typeof callback);
 
 	// 放入到taskQueue中 Or 放入到timeQueue中
 	if (startTime > currentTime) {
@@ -116,6 +119,7 @@ function scheduleCallback(priorityLevel: Lane, callback: any, options?: { delay:
 }
 
 let scheduledHostCallback: ((currentTime: number) => boolean) | null = null;
+
 function requestHostCallback(flushWork: (initTime: number) => boolean) {
 	scheduledHostCallback = flushWork;
 	if (!isMessageLoopRunning) {
@@ -126,9 +130,11 @@ function requestHostCallback(flushWork: (initTime: number) => boolean) {
 
 const channel = new MessageChannel();
 channel.port1.onmessage = performWorkUntilDeadline;
+
 function schedulePerformWorkUntilDeadline() {
 	channel.port2.postMessage(null);
 }
+
 function performWorkUntilDeadline() {
 	// Mark: 我觉得下面这种情况不太可能会发生，源码中只处理isMessageLoopRunning，没处理isHostCallbackScheduled
 	if (!scheduledHostCallback) {
@@ -137,11 +143,13 @@ function performWorkUntilDeadline() {
 	}
 
 	const currentTime = getCurrentTime();
+	startTime = currentTime;
 
 	let hasMoreWork = true;
 	try {
 		// scheduledHostCallback=flushWork
 		hasMoreWork = scheduledHostCallback(currentTime);
+		console.log("flushWork得到hasMoreWork", hasMoreWork);
 	} finally {
 		if (hasMoreWork) {
 			// 有更多任务，则继续post.message(null)触发宏任务
@@ -181,11 +189,15 @@ function workLoop(initTime: number): boolean {
 	// 从taskQueue中取出task
 	currentTask = taskQueue.peek();
 	while (currentTask !== null) {
+		console.log("workLoop得到的初始化时间", initTime);
+		console.log("shouldYieldToHost()", shouldYieldToHost());
+
 		if (currentTask.expirationTime > currentTime && shouldYieldToHost()) {
 			break;
 		}
 
 		const callback = currentTask.callback;
+		console.log("workLoop", typeof callback);
 		if (typeof callback === "function") {
 			currentTask.callback = null;
 			currentPriorityLevel = currentTask.priorityLevel;
@@ -194,6 +206,7 @@ function workLoop(initTime: number): boolean {
 			const didUserCallbackTimeout = currentTask.expirationTime <= currentTime;
 
 			const continueCallback = callback(didUserCallbackTimeout);
+			console.log("continueCallback = callback()", continueCallback);
 			// MARK: 这里要重置时间！！！！！
 			currentTime = getCurrentTime();
 			if (continueCallback) {
@@ -202,6 +215,8 @@ function workLoop(initTime: number): boolean {
 				// 如果已经执行完毕
 				if (currentTask === taskQueue.peek()) {
 					taskQueue.pop();
+				} else {
+					console.warn("currentTask不等于taskQueue.peek()", currentTask, taskQueue);
 				}
 			}
 
@@ -229,7 +244,17 @@ function workLoop(initTime: number): boolean {
 	}
 }
 
+let startTime = -1;
+let frameInterval = frameYieldMs;
+
 function shouldYieldToHost() {
+	const timeElapsed = getCurrentTime() - startTime;
+	console.log("shouldYieldToHost", getCurrentTime(), startTime);
+	if (timeElapsed < frameInterval) {
+		// The main thread has only been blocked for a really short amount of time;
+		// smaller than a single frame. Don't yield yet.
+		return false;
+	}
 	return true;
 }
 

@@ -10,6 +10,8 @@ import {
 	getHighestPriorityLane,
 	includesBlockingLane,
 	includesExpiredLane,
+	mergeLanes,
+	markRootFinished,
 } from "./ReactFiberLane";
 import { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { ConcurrentMode, NoMode } from "./ReactTypeOfMode";
@@ -127,6 +129,16 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
 		root,
 		root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes,
 	);
+	``;
+	if (nextLanes === NoLanes) {
+		if (existingCallbackNode !== null) {
+			cancelCallback(existingCallbackNode);
+		}
+		root.callbackNode = null;
+		root.callbackPriority = NoLane;
+		return;
+	}
+
 	// 从lanes中拿到优先级最高的lane
 	var newCallbackPriority = getHighestPriorityLane(nextLanes);
 
@@ -331,6 +343,15 @@ function commitRoot(root: FiberRoot) {
 function commitRootImpl(root: FiberRoot) {
 	const finishedWork: Fiber = root.finishedWork!; // root.current.alternate就是finishedWork
 	const lanes = root.finishedLanes;
+
+	root.finishedWork = null;
+	root.finishedLanes = NoLanes;
+
+	var remainingLanes: Lane = mergeLanes(finishedWork.lanes, finishedWork.childLanes);
+	// remainingLanes = mergeLanes(remainingLanes, concurrentlyUpdatedLanes);
+
+	// root.pendingLanes置为0，防止重复渲染，在ensureRootIsScheduled()会阻止
+	markRootFinished(root, remainingLanes);
 
 	// 1. 判断是否需要有flags需要执行
 	const subtreeHasEffects =
