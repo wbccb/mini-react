@@ -62,6 +62,5 @@
 
 
 # 参考
-1. [BetaSu/big-react](https://github.com/BetaSu/big-react)
-2. https://dev.to/vinomanick/create-a-monorepo-using-pnpm-workspace-1ebn
-3. https://github.com/vinomanick/pnpm-monorepo
+1. https://dev.to/vinomanick/create-a-monorepo-using-pnpm-workspace-1ebn
+2. https://github.com/vinomanick/pnpm-monorepo
