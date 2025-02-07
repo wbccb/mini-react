@@ -11,24 +11,29 @@ function reducer(state: any, action: any) {
 
 export default function TestuseReducerAnduseState() {
 	const [state, dispatch] = useReducer(reducer, { age: 42 });
-	const [count, setCount] = useState(0);
+	// const [count, setCount] = useState(0);
+	//
+	// function handleClick() {
+	// 	setCount(count + 1);
+	// }
 
-	function handleClick() {
-		setCount(count + 1);
-	}
+	setTimeout(() => {
+		const increateAge = document.getElementsByTagName("button");
+		if (increateAge && increateAge[0]) {
+			function clickListener() {
+				dispatch({ type: "incremented_age" });
+			}
+			increateAge[0].removeEventListener("click", clickListener);
+			increateAge[0].addEventListener("click", clickListener);
+		}
+	}, 1000);
 
 	return (
 		<>
-			<button
-				onClick={() => {
-					dispatch({ type: "incremented_age" });
-				}}
-			>
-				Increment age
-			</button>
+			<button id={"increateAge"}>Increment age</button>
 			<p>Hello! You are {state.age}.</p>
 
-			<button onClick={handleClick}>You pressed me {count} times</button>
+			{/*<button onClick={handleClick}>You pressed me {count} times</button>*/}
 		</>
 	);
 }
