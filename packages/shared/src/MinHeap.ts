@@ -9,6 +9,7 @@ interface Task {
 	startTime: number;
 	expirationTime: number;
 	sortIndex?: number;
+	desc?: string;
 }
 type Node = Task;
 
@@ -17,6 +18,7 @@ class MinHeap {
 	size: number;
 
 	constructor() {
+		// 这是为了能够更方便对位置，最小堆从1开始可以很方便计算出child或者parent!
 		this.array = [
 			{
 				id: 0,
@@ -25,6 +27,7 @@ class MinHeap {
 				startTime: 0,
 				expirationTime: 0,
 				sortIndex: 0,
+				desc: "我只是个占位的，没有什么作用",
 			},
 		];
 		this.size = 0;
@@ -41,13 +44,17 @@ class MinHeap {
 			return null;
 		}
 		if (this.size === 1) {
+			const deleteData = this.array[1];
 			this.size = 0;
-			return this.array[1];
+			this.array.length = this.size + 1;
+			return deleteData;
 		}
+		const deleteData = this.array[1];
 		this.array[1] = this.array[this.size];
 		this.size--;
+		this.array.length = this.size + 1;
 		this.shiftDown(1);
-		return this.array[1];
+		return deleteData;
 	}
 
 	peek(): Node | null {
