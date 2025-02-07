@@ -12,7 +12,7 @@ let renderLanes: Lanes = NoLanes;
 let currentlyRenderingFiber: Fiber | null = null;
 
 let workInProgressHook: Hook | null = null;
-let currentHook: Hook | null = null;
+let currentHook: Hook | null | undefined = null;
 
 let ReactCurrentDispatcher = {
 	current: null,
@@ -69,6 +69,9 @@ function renderWithHooks(
 
 	renderLanes = NoLanes;
 	currentlyRenderingFiber = null;
+
+	currentHook = null;
+	workInProgressHook = null;
 
 	return children;
 }
