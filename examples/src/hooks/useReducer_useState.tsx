@@ -8,7 +8,8 @@ function reducer(state: any, action: any) {
 	}
 	throw Error("Unknown action.");
 }
-
+var increateAge;
+var fn: any;
 export default function TestuseReducerAnduseState() {
 	const [state, dispatch] = useReducer(reducer, { age: 42 });
 	// const [count, setCount] = useState(0);
@@ -18,15 +19,17 @@ export default function TestuseReducerAnduseState() {
 	// }
 
 	setTimeout(() => {
-		const increateAge = document.getElementsByTagName("button");
+		increateAge = document.getElementsByTagName("button");
 		if (increateAge && increateAge[0]) {
-			function clickListener() {
-				dispatch({ type: "incremented_age" });
+			if (!fn) {
+				fn = function clickListener() {
+					dispatch({ type: "incremented_age" });
+				};
 			}
-			increateAge[0].removeEventListener("click", clickListener);
-			increateAge[0].addEventListener("click", clickListener);
+			increateAge[0].removeEventListener("click", fn);
+			increateAge[0].addEventListener("click", fn);
 		}
-	}, 1000);
+	}, 0);
 
 	return (
 		<>
