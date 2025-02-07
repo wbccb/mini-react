@@ -147,6 +147,8 @@ function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
 	let workInProgress = current.alternate;
 	if (workInProgress === null) {
 		workInProgress = createFiber(current.tag, pendingProps, null, current.mode);
+		workInProgress.type = current.type;
+		workInProgress.elementType = current.elementType;
 		workInProgress.stateNode = current.stateNode;
 
 		workInProgress.alternate = current; // workInProgress和current相关邦定

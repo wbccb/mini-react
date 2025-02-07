@@ -368,6 +368,10 @@ function commitRootImpl(root: FiberRoot) {
 		commitBeforeMutationEffects(root, finishedWork);
 		// 2.2
 		commitMutationEffects(root, finishedWork, lanes);
+
+		// 切换双缓冲树
+		root.current = finishedWork;
+
 		// 2.3
 		commitLayoutEffects(finishedWork, root, lanes);
 

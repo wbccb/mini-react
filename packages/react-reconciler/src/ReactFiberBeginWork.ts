@@ -48,6 +48,17 @@ function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: La
 			return updateFragment(current, workInProgress, renderLanes);
 		case IndeterminateComponent:
 			return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
+		case FunctionComponent: {
+			var Component = workInProgress.type;
+			var unresolvedProps = workInProgress.pendingProps;
+			return updateFunctionComponent(
+				current,
+				workInProgress,
+				Component,
+				unresolvedProps,
+				renderLanes,
+			);
+		}
 		case ClassComponent:
 			const _Component = workInProgress.type;
 			const props = workInProgress.pendingProps;
@@ -158,6 +169,26 @@ function mountIndeterminateComponent(
 		reconcileChildren(null, workInProgress, value, renderLanes);
 		return workInProgress.child;
 	}
+}
+
+function updateFunctionComponent(
+	current: Fiber | null,
+	workInProgress: Fiber,
+	Component: any, // workInProgress.type
+	nextProps: any,
+	renderLanes: Lanes,
+) {
+	const nextChildren: any = renderWithHooks(
+		null,
+		workInProgress,
+		Component,
+		nextProps,
+		renderLanes,
+	);
+	workInProgress.flags |= PerformedWork;
+	// 省略bailoutOnAlreadyFinishedWork逻辑
+	reconcileChildren(current, workInProgress, nextChildren, renderLanes);
+	return workInProgress.child;
 }
 
 function updateClassComponent(
