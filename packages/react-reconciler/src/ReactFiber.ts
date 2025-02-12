@@ -47,6 +47,17 @@ function createFiberFromElement(element: ReactElement, mode: TypeOfMode, lanes: 
 	return fiber;
 }
 
+function createFiberFromFragments(
+	elements: ReactElement[],
+	mode: TypeOfMode,
+	lanes: Lanes,
+	key: string,
+) {
+	const fiber = createFiber(Fragment, elements, key, mode);
+	fiber.lanes = lanes;
+	return fiber;
+}
+
 function createFiberFromTypeAndProps(
 	type: any, // React$ElementType
 	key: null | string,
@@ -174,4 +185,5 @@ export {
 	createFiberFromElement,
 	createFiberFromText,
 	createWorkInProgress,
+	createFiberFromFragments,
 };

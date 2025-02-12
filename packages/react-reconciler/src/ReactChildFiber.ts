@@ -1,9 +1,14 @@
 import { Fiber } from "./ReactInternalTypes";
 import { Lanes } from "./ReactFiberLane";
 import { getIteratorFn, REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE, ReactElement } from "shared";
-import { createFiberFromElement, createFiberFromText, createWorkInProgress } from "./ReactFiber";
+import {
+	createFiberFromElement,
+	createFiberFromFragments,
+	createFiberFromText,
+	createWorkInProgress,
+} from "./ReactFiber";
 import { ChildDeletion, Forked, Placement } from "./ReactFiberFlags";
-import { Fragment } from "./ReactWorkTags";
+import { Fragment, HostText } from "./ReactWorkTags";
 
 function ChildReconciler(shouldTrackSideEffects: boolean) {
 	function deleteChild(parentFiber: Fiber, childFiber: Fiber) {
@@ -34,7 +39,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		return null;
 	}
 
-	function useFiber(fiber: Fiber, pendingProps: Record<string, any>): Fiber {
+	function useFiber(fiber: Fiber, pendingProps: Record<string, any> | string): Fiber {
 		const clone = createWorkInProgress(fiber, pendingProps);
 		clone.index = 0;
 		clone.sibling = null;
@@ -100,6 +105,109 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		return newFiber;
 	}
 
+	// 检测 oldFiber能否复用，如果能，则返回更新后的数据
+	// 如果不能复用，则返回null
+	function updateSlot(parentFiber: Fiber, oldFiber: Fiber, newChild: any, lanes: Lanes) {
+		// 判断类型，进入不同的类型处理
+		// 先通过key把明显不能复用的直接返回null
+		// 不明显再进入不同的处理函数updateTextNode()...根据tag以及其他条件判断能否复用：能复用就更新；不能复用就新建
+
+		const key = oldFiber !== null ? oldFiber.key : null;
+		// 1.文本能否复用
+		if ((typeof newChild === "string" && newChild !== "") || typeof newChild === "number") {
+			if (key !== null) {
+				// 有key必定不是文本节点无法复用
+				return null;
+			}
+			return updateTextNode(parentFiber, oldFiber, "" + newChild, lanes);
+		}
+		// 2. 元素能否复用
+		if (typeof newChild === "object" && newChild !== null) {
+			switch (newChild.$$typeof) {
+				case REACT_ELEMENT_TYPE: {
+					if (newChild.key === key) {
+						// 可以复用
+						return updateElement(parentFiber, oldFiber, newChild, lanes);
+					} else {
+						return null;
+					}
+				}
+			}
+
+			// 数组能否复用
+			if (Array.isArray(newChild) || getIteratorFn(newChild)) {
+				if (key !== null) {
+					// 数组也没有key
+					return null;
+				}
+				return updateFragment(parentFiber, oldFiber, newChild, lanes, null);
+			}
+		}
+
+		return null;
+	}
+
+	function updateTextNode(parentFiber: Fiber, oldFiber: Fiber, text: string, lanes: Lanes) {
+		if (oldFiber === null || oldFiber.tag !== HostText) {
+			const created = createFiberFromText(text, parentFiber.mode, lanes);
+			created.return = parentFiber;
+			return created;
+		} else {
+			const existing = useFiber(oldFiber, text);
+			existing.return = parentFiber;
+			return existing;
+		}
+	}
+
+	function updateElement(
+		parentFiber: Fiber,
+		oldFiber: Fiber,
+		newFiberElement: ReactElement,
+		lanes: Lanes,
+	) {
+		const elementType = newFiberElement.type;
+
+		if (elementType === REACT_FRAGMENT_TYPE) {
+			// 先特殊处理fragment的情况
+			return updateFragment(
+				parentFiber,
+				oldFiber,
+				newFiberElement.props.children,
+				lanes,
+				newFiberElement.key,
+			);
+		}
+
+		if (oldFiber !== null) {
+			if (oldFiber.elementType === elementType) {
+				const existing = useFiber(oldFiber, newFiberElement.props);
+				existing.return = parentFiber;
+				return existing;
+			}
+		}
+		const created = createFiberFromElement(newFiberElement, parentFiber.mode, lanes);
+		created.return = parentFiber;
+		return created;
+	}
+
+	function updateFragment(
+		parentFiber: Fiber,
+		oldFiber: Fiber,
+		fragment: ReactElement[],
+		lanes: Lanes,
+		key: string,
+	) {
+		if (oldFiber === null || oldFiber.tag !== Fragment) {
+			const created = createFiberFromFragments(fragment, parentFiber.mode, lanes, key);
+			created.return = parentFiber;
+			return created;
+		} else {
+			const existing = useFiber(oldFiber, fragment);
+			existing.return = parentFiber;
+			return existing;
+		}
+	}
+
 	function reconcileChildrenArray(
 		parentFiber: Fiber,
 		oldFiberFirstChild: Fiber | null,
@@ -127,11 +235,11 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 				}
 				previousNewFiber = _newFiber;
 			}
-			return resultingFirstFiber;
 		}
 
-		return null;
+		return resultingFirstFiber;
 	}
+
 	function createChild(parentFiber: Fiber, fiber: any, lanes: Lanes) {
 		// 注：React源码中fiber就是any，因为createFiberFromElement是ReactElement类型
 		if ((typeof fiber === "string" && fiber !== "") || typeof fiber === "number") {
