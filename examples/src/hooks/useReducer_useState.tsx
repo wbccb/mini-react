@@ -33,8 +33,8 @@ export default function TestuseReducerAnduseState() {
 
 	return (
 		<>
-			<button id={"increateAge"}>Increment age</button>
-			<p>Hello! You are {state.age}.</p>
+			<button id="我是ClassComponent的button">增加</button>
+			<p>{state.age}</p>
 
 			{/*<button onClick={handleClick}>You pressed me {count} times</button>*/}
 		</>
