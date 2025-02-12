@@ -50,6 +50,7 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 	// MutationEffects真正执行地方
 	const flags = finishedWork.flags;
 	switch (finishedWork.tag) {
+		case FunctionComponent:
 		case HostRoot:
 			recursivelyTraverseMutationEffects(root, finishedWork);
 			commitReconciliationEffects(finishedWork);
@@ -217,6 +218,11 @@ function commitPlacement(finishedWork: Fiber) {
 			const _parent: Element = parentFiber.stateNode.containerInfo; // 根Fiber的DOM存放比较特殊
 			const _before = getHostSibling(finishedWork);
 			insertOrAppendPlacementNodeIntoContainer(finishedWork, _before, _parent);
+			break;
+		case HostComponent:
+			const parent = parentFiber.stateNode;
+			const before = getHostSibling(finishedWork);
+			insertOrAppendPlacementNodeIntoContainer(finishedWork, before, parent);
 			break;
 	}
 }
