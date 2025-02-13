@@ -25,6 +25,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 			deletions.push(childFiber);
 		}
 	}
+
 	function deleteRemainingChildren(parentFiber: Fiber, childFiber: Fiber | null) {
 		if (!shouldTrackSideEffects) {
 			// 初次渲染
@@ -45,6 +46,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		clone.sibling = null;
 		return clone;
 	}
+
 	function reconcileSingleElement(
 		parentFiber: Fiber,
 		oldFiberFirstChild: Fiber | null,
@@ -114,6 +116,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 
 		const key = oldFiber !== null ? oldFiber.key : null;
 		// 1.文本能否复用
+		console.error("UpdateSLot", newChild);
 		if ((typeof newChild === "string" && newChild !== "") || typeof newChild === "number") {
 			if (key !== null) {
 				// 有key必定不是文本节点无法复用
@@ -195,7 +198,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		oldFiber: Fiber,
 		fragment: ReactElement[],
 		lanes: Lanes,
-		key: string,
+		key: string | null,
 	) {
 		if (oldFiber === null || oldFiber.tag !== Fragment) {
 			const created = createFiberFromFragments(fragment, parentFiber.mode, lanes, key);
@@ -214,12 +217,62 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		newChild: any,
 		lanes: Lanes,
 	): Fiber | null {
-		const oldFiber = oldFiberFirstChild;
+		let oldFiber = oldFiberFirstChild;
 		let newIdx = 0;
 		let lastPlaceIndex = 0;
 		let previousNewFiber: Fiber | null = null;
 		let resultingFirstFiber: Fiber | null = null;
+		let nextOldFiber: Fiber | null = null;
 
+		// 缺乏更新时的处理，因为你只处理了oldFiber为null的情况，没有处理oldFiber不为null的情况
+
+		// 3.2.1 从左边到右边，从`index=0`不断递增，比较是否可以直接复用，减少diff的范围
+		for (; oldFiber !== null && newIdx < newChild.length; newIdx++) {
+			if (oldFiber.index > newIdx) {
+				nextOldFiber = oldFiber;
+				oldFiber = null;
+			} else {
+				nextOldFiber = oldFiber.sibling;
+			}
+
+			const newFiber = updateSlot(parentFiber, oldFiber!, newChild[newIdx], lanes);
+			if (newFiber === null) {
+				if (oldFiber === null) {
+					// 说明是故意oldFiber设置为null => updateSlot返回null
+					// 恢复值
+					oldFiber = nextOldFiber;
+				}
+				break;
+			}
+
+			// 如何知道newFiber是插入还是更新呢？
+			const isNewCreate = newFiber.alternate === null;
+
+			if (shouldTrackSideEffects) {
+				if (oldFiber && isNewCreate) {
+					deleteChild(parentFiber, oldFiber);
+				}
+			}
+
+			// 标记Placement并且更新index
+			lastPlaceIndex = placeChild(newFiber, lastPlaceIndex, newIdx);
+
+			if (previousNewFiber === null) {
+				resultingFirstFiber = newFiber;
+			} else {
+				previousNewFiber.sibling = newFiber;
+			}
+			previousNewFiber = newFiber;
+			oldFiber = nextOldFiber;
+		}
+
+		// 3.2.2 新的节点已经遍历完成，旧的节点还有，进行剩余旧节点的删除工作
+		if (newIdx === newChild.length) {
+			deleteRemainingChildren(parentFiber, oldFiber);
+			return resultingFirstFiber;
+		}
+
+		// 3.2.2 旧的节点已经遍历完成，新的节点还有，开始剩余新的节点的创建工作
 		if (oldFiber === null) {
 			for (; newIdx < newChild.length; newIdx++) {
 				const _newFiber: Fiber | null = createChild(parentFiber, newChild[newIdx], lanes);
@@ -236,6 +289,10 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 				previousNewFiber = _newFiber;
 			}
 		}
+
+		// 3.2.3 新的节点和旧的节点还有，进行diff复用
+
+		// 3.2.4 新的节点已经新增/移动完毕，剩下的旧节点应该删除
 
 		return resultingFirstFiber;
 	}
@@ -269,10 +326,18 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 			return lastPlaceIndex;
 		}
 		// shouldTrackSideEffects=true: 对比或者HostRoot的第一层
-		const current = newFiber.alternate;
-		if (current !== null) {
+		const oldFiber = newFiber.alternate;
+		if (oldFiber !== null) {
 			// TODO 后续diff再完善
-			return current.index;
+
+			// 这种情况是在后面diff两个数组才会发生
+			if (oldFiber.index < lastPlaceIndex) {
+				// 移动
+				newFiber.flags = newFiber.flags | Placement;
+				return lastPlaceIndex;
+			} else {
+				return oldFiber.index;
+			}
 		} else {
 			newFiber.flags |= Placement;
 			return lastPlaceIndex;
@@ -285,8 +350,16 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		text: string,
 		lanes: Lanes,
 	) {
+		if (oldFiberFirstChild && oldFiberFirstChild.tag === HostText) {
+			// 符合复用基础
+			deleteRemainingChildren(parentFiber, oldFiberFirstChild.sibling);
+			const existing = useFiber(oldFiberFirstChild, text);
+			existing.return = parentFiber;
+			return existing;
+		}
 		// TODO 暂时省略更新相关逻辑deleteRemainingChildren()
 		// child不是数组 & child等于纯文本时触发
+		deleteRemainingChildren(parentFiber, oldFiberFirstChild);
 		const created = createFiberFromText(text, parentFiber.mode, lanes);
 		created.return = parentFiber;
 		return created;
