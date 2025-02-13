@@ -51,7 +51,7 @@ function createFiberFromFragments(
 	elements: ReactElement[],
 	mode: TypeOfMode,
 	lanes: Lanes,
-	key: string,
+	key: string | null,
 ) {
 	const fiber = createFiber(Fragment, elements, key, mode);
 	fiber.lanes = lanes;
@@ -96,7 +96,7 @@ class FiberNode {
 	tag: WorkTag;
 	stateNode: any;
 	memoizedState: any;
-	updateQueue: FiberClassUpdateQueue<State> | null;
+	updateQueue: FiberClassUpdateQueue<State> | string[] | null;
 	mode: TypeOfMode;
 	elementType: any;
 	type: any;
@@ -172,10 +172,14 @@ function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
 	workInProgress.lanes = current.lanes;
 
 	workInProgress.child = current.child;
+	workInProgress.memoizedProps = current.memoizedProps;
 	workInProgress.memoizedState = current.memoizedState;
 	workInProgress.updateQueue = current.updateQueue;
 
 	workInProgress.sibling = current.sibling;
+
+	workInProgress.pendingProps = pendingProps;
+
 	return workInProgress;
 }
 

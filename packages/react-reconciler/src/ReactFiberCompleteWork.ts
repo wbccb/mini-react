@@ -9,7 +9,8 @@ import {
 	HostText,
 	IndeterminateComponent,
 } from "./ReactWorkTags";
-import { NoFlags, Snapshot } from "./ReactFiberFlags";
+import { NoFlags, Snapshot, Update } from "./ReactFiberFlags";
+import { diffProperties } from "react-dom/src/client/ReactDOMComponent";
 
 function completeWork(
 	current: Fiber | null,
@@ -23,6 +24,7 @@ function completeWork(
 			const type = workInProgress.type;
 			if (current !== null && workInProgress.stateNode !== null) {
 				// 更新逻辑
+				updateHostComponent(current, workInProgress, type, newProps);
 			} else {
 				const instance = createInstance(type); // 创建dom
 				appendAllChildren(instance, workInProgress); //
@@ -121,4 +123,19 @@ function bubbleProperties(workInProgress: Fiber) {
 		// 没有改变
 	}
 }
+
+function updateHostComponent(oldFiber: Fiber, workInProgress: Fiber, type: string, newProps: any) {
+	const oldProps = oldFiber.memoizedProps;
+	if (oldProps === newProps) {
+		return;
+	}
+
+	const instance = workInProgress.stateNode;
+	const updatePayload: string[] = diffProperties(instance, workInProgress.type, oldProps, newProps);
+	workInProgress.updateQueue = updatePayload;
+	if (updatePayload) {
+		workInProgress.flags |= Update;
+	}
+}
+
 export { completeWork };

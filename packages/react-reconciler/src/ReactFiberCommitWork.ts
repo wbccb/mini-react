@@ -26,6 +26,7 @@ import {
 	removeChildFromContainer,
 } from "react-dom/src/client/ReactDOMHostConfig";
 import { FiberNode } from "./ReactFiber";
+import { updateDOMProperties } from "react-dom/src/client/ReactDOMComponent";
 
 let nextEffect: Fiber | null = null;
 
@@ -49,13 +50,13 @@ function commitBeforeMutationEffectsOnFiber(finishedWork: Fiber) {
 function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 	// MutationEffects真正执行地方
 	const flags = finishedWork.flags;
+	const current = finishedWork.alternate;
 	switch (finishedWork.tag) {
 		case FunctionComponent:
 		case HostRoot:
 			recursivelyTraverseMutationEffects(root, finishedWork);
 			commitReconciliationEffects(finishedWork);
 			if (flags & Update) {
-				// TODO 渲染更新再完善
 			}
 			return;
 		case HostComponent:
@@ -64,7 +65,17 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 			if (flags & Ref) {
 			}
 			if (flags & Update) {
-				// TODO 渲染更新再完善
+				const instance = finishedWork.stateNode;
+				if (instance !== null) {
+					const newProps = finishedWork.memoizedProps;
+					const oldProps = current?.memoizedProps || newProps;
+					const type = finishedWork.type;
+					const updatePayload = finishedWork.updateQueue;
+					finishedWork.updateQueue = null;
+					if (updatePayload !== null) {
+						commitUpdate(instance, updatePayload);
+					}
+				}
 			}
 			return;
 		default: {
@@ -208,6 +219,10 @@ function recursivelyTraverseDeletionEffects(
 		commitDeletionEffectsOnFiber(root, parentFiber, child);
 		child = child.sibling;
 	}
+}
+
+function commitUpdate(domElement: HTMLElement, updatePayload: any) {
+	updateDOMProperties(domElement, updatePayload);
 }
 
 function commitPlacement(finishedWork: Fiber) {
