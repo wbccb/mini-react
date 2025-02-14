@@ -85,6 +85,7 @@ function scheduleCallback(priorityLevel: Lane, callback: any, options?: { delay:
 	};
 
 	console.log("创建Task，对应的回调函数为", typeof callback);
+	console.trace();
 
 	// 放入到taskQueue中 Or 放入到timeQueue中
 	if (startTime > currentTime) {

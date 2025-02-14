@@ -10,13 +10,16 @@ function reducer(state: any, action: any) {
 }
 var increateAge;
 var fn: any;
+var stateFn: any;
 export default function TestuseReducerAnduseState() {
 	const [state, dispatch] = useReducer(reducer, { age: 42 });
-	// const [count, setCount] = useState(0);
-	//
-	// function handleClick() {
-	// 	setCount(count + 1);
-	// }
+	const [count, setCount] = useState(0);
+
+	if (!stateFn) {
+		stateFn = function handleClick() {
+			setCount(count + 1);
+		};
+	}
 
 	setTimeout(() => {
 		increateAge = document.getElementsByTagName("button");
@@ -29,14 +32,20 @@ export default function TestuseReducerAnduseState() {
 			increateAge[0].removeEventListener("click", fn);
 			increateAge[0].addEventListener("click", fn);
 		}
+
+		if (increateAge && increateAge[1]) {
+			increateAge[1].removeEventListener("click", stateFn);
+			increateAge[1].addEventListener("click", stateFn);
+		}
 	}, 0);
 
 	return (
 		<>
-			<button id="我是ClassComponent的button">增加</button>
+			<button id="我是ClassComponent的button">增加useReducer</button>
 			<p>{state.age}</p>
 
-			{/*<button onClick={handleClick}>You pressed me {count} times</button>*/}
+			<button id="我是useState的button">增加useState</button>
+			<p>{count}</p>
 		</>
 	);
 }
