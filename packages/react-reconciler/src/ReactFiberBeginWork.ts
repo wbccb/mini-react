@@ -179,7 +179,7 @@ function updateFunctionComponent(
 	renderLanes: Lanes,
 ) {
 	const nextChildren: any = renderWithHooks(
-		null,
+		current,
 		workInProgress,
 		Component,
 		nextProps,

@@ -26,6 +26,7 @@ export type FiberUpdate<S, A> = {
 	hasEagerState: boolean;
 	eagerState: S | null;
 	next: FiberUpdate<S, A> | null;
+	desc?: string;
 };
 
 export interface FiberUpdateQueue<S, A> {
@@ -138,6 +139,7 @@ function dispatchReducerAction(fiber: Fiber, queue: FiberUpdateQueue<any, any>, 
 		hasEagerState: false,
 		eagerState: null,
 		next: null,
+		desc: "我是useReducer-set方法触发的update:" + new Date().getTime(),
 	};
 	//
 	const root = enqueueConcurrentHookUpdate(fiber, queue, update, lane);
@@ -164,7 +166,7 @@ function updateReducer(reducer: Reducer, initialArg: any, init?: (initialArg: an
 		}
 		baseQueue = pendingQueue;
 
-		currentHook!.baseQueue = baseQueue;
+		// currentHook!.baseQueue = baseQueue;
 		queue.pending = null;
 	}
 
@@ -191,6 +193,7 @@ function updateReducer(reducer: Reducer, initialArg: any, init?: (initialArg: an
 	if (baseQueue === null) {
 		queue.lanes = NoLanes;
 	}
+
 	// 	返回hook.memoizedState, dispatch
 	return [hook.memoizedState, queue.dispatch];
 }
@@ -198,9 +201,10 @@ function updateReducer(reducer: Reducer, initialArg: any, init?: (initialArg: an
 function updateWorkInProgressHook() {
 	const current: Fiber = currentlyRenderingFiber!.alternate!;
 	// 更新模式会存在current
+	currentlyRenderingFiber!.memoizedState = current.memoizedState;
+
 	if (workInProgressHook === null) {
 		// 头节点还没赋值
-		currentlyRenderingFiber!.memoizedState = current.memoizedState;
 		workInProgressHook = currentlyRenderingFiber!.memoizedState;
 		currentHook = current.memoizedState;
 	} else {
@@ -270,4 +274,15 @@ function updateState(initialState: State) {
 	return updateReducer(basicStateReducer, initialState);
 }
 
-export { renderWithHooks };
+function useState(initialState: State) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		// mount初次加载
+		return mountState(initialState);
+	} else {
+		// 更新流程
+		return updateState(initialState);
+	}
+}
+
+export { renderWithHooks, useReducer, useState };
