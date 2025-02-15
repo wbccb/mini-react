@@ -151,6 +151,17 @@ function commitDeletionEffects(root: FiberRoot, parentFiber: Fiber, deletedFiber
 
 	hostParent = null;
 	hostParentIsContainer = false;
+
+	// commitDeletionEffectsOnFiber()已经清除了DOM之间的关系，下面我们将清除fiber之间的关系
+	detachFiberMutation(deletedFiber);
+}
+
+function detachFiberMutation(fiber: Fiber) {
+	const alternate = fiber.alternate;
+	if (alternate !== null) {
+		alternate.return = null;
+	}
+	fiber.return = null;
 }
 
 function commitDeletionEffectsOnFiber(root: FiberRoot, parentFiber: Fiber, deletedFiber: Fiber) {

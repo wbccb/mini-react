@@ -125,13 +125,32 @@ function bubbleProperties(workInProgress: Fiber) {
 			subtreeFlags = subtreeFlags | child.flags;
 			subtreeFlags = subtreeFlags | child.subtreeFlags;
 
+			// console.error(
+			// 	"bubbleProperties!!改变-children遍历",
+			// 	child,
+			// 	child.stateNode,
+			// 	(child!.flags & ChildDeletion) !== NoFlags,
+			// );
+			//
+			// console.error(
+			// 	"bubbleProperties!!改变---flags",
+			// 	workInProgress,
+			// 	(workInProgress.flags & ChildDeletion) !== 0b00000000000000000000000000,
+			// );
+
+			child.return = workInProgress;
 			child = child.sibling;
 		}
-		workInProgress.subtreeFlags = subtreeFlags;
+		workInProgress.subtreeFlags |= subtreeFlags;
 		workInProgress.childLanes = newChildLanes;
+		// console.error(
+		// 	"bubbleProperties!!改变",
+		// 	workInProgress,
+		// 	(subtreeFlags & ChildDeletion) !== NoFlags,
+		// );
 	} else {
 		// 没有改变
-		console.error("bubbleProperties 没有改变");
+		console.error("bubbleProperties 没有改变", workInProgress);
 	}
 }
 
