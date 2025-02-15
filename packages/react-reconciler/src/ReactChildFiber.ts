@@ -40,6 +40,22 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		return null;
 	}
 
+	function mapRemainingChildren(parentFiber: Fiber, currentFirstChild: Fiber | null) {
+		const existingChildren: Map<string | number, Fiber> = new Map();
+
+		let currentFiber: Fiber | null = currentFirstChild;
+		while (currentFiber !== null) {
+			if (currentFiber.key !== null) {
+				existingChildren.set(currentFiber.key, currentFiber);
+			} else {
+				existingChildren.set(currentFiber.index, currentFiber);
+			}
+
+			currentFiber = currentFiber.sibling;
+		}
+		return existingChildren;
+	}
+
 	function useFiber(fiber: Fiber, pendingProps: Record<string, any> | string): Fiber {
 		const clone = createWorkInProgress(fiber, pendingProps);
 		clone.index = 0;
@@ -150,13 +166,55 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		return null;
 	}
 
-	function updateTextNode(parentFiber: Fiber, oldFiber: Fiber, text: string, lanes: Lanes) {
+	function updateFromMap(
+		existingChildren: Map<string | number, Fiber>,
+		parentFiber: Fiber,
+		newIdx: number,
+		newChild: any,
+		lanes: Lanes,
+	) {
+		// 分类型处理：之前我们在updateSlot()是先判断key能不能复用，然后调用不同类型的处理方式进行插入/复用
+		// 这里我们直接通过existingChildren代替key的判断，本质还是一样的逻辑
+
+		// 文本
+		if ((typeof newChild === "string" && newChild !== "") || typeof newChild === "number") {
+			// 文本没有key
+			const matchedFiber = existingChildren.get(newIdx) || null;
+			return updateTextNode(parentFiber, matchedFiber, newChild, lanes);
+		}
+
+		// 元素
+		if (typeof newChild === "object" && newChild !== null) {
+			switch (newChild.$$typeof) {
+				case REACT_ELEMENT_TYPE:
+					const matchedFiber =
+						existingChildren.get(newChild.key === null ? newIdx : newChild.key) || null;
+					return updateElement(parentFiber, matchedFiber, newChild, lanes);
+					break;
+			}
+			if (Array.isArray(newChild) || getIteratorFn(newChild)) {
+				const matchedFiber = existingChildren.get(newIdx) || null;
+				return updateFragment(parentFiber, matchedFiber, newChild, lanes, null);
+			}
+
+			throw new Error("updateFromMap遇到特殊类型没有处理");
+		}
+
+		return null;
+	}
+
+	function updateTextNode(
+		parentFiber: Fiber,
+		oldFiber: Fiber | null,
+		text: string | number,
+		lanes: Lanes,
+	) {
 		if (oldFiber === null || oldFiber.tag !== HostText) {
-			const created = createFiberFromText(text, parentFiber.mode, lanes);
+			const created = createFiberFromText(text + "", parentFiber.mode, lanes);
 			created.return = parentFiber;
 			return created;
 		} else {
-			const existing = useFiber(oldFiber, text);
+			const existing = useFiber(oldFiber, text + "");
 			existing.return = parentFiber;
 			return existing;
 		}
@@ -164,7 +222,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 
 	function updateElement(
 		parentFiber: Fiber,
-		oldFiber: Fiber,
+		oldFiber: Fiber | null,
 		newFiberElement: ReactElement,
 		lanes: Lanes,
 	) {
@@ -195,7 +253,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 
 	function updateFragment(
 		parentFiber: Fiber,
-		oldFiber: Fiber,
+		oldFiber: Fiber | null,
 		fragment: ReactElement[],
 		lanes: Lanes,
 		key: string | null,
@@ -291,7 +349,10 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		}
 
 		// 3.2.3 新的节点和旧的节点还有，进行diff复用
-		const existingChildren = mapRemainingChildren(parentFiber, oldFiber);
+		const existingChildren: Map<string | number, Fiber> = mapRemainingChildren(
+			parentFiber,
+			oldFiber,
+		);
 		for (; newIdx < newChild.length; newIdx++) {
 			// 复用或者插入=>得到新的fiber
 			const newFiber = updateFromMap(
@@ -305,7 +366,10 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 			if (newFiber !== null) {
 				if (shouldTrackSideEffects && newFiber.alternate !== null) {
 					// 复用成功，删除map数据
-					existingChildren.delete();
+					// 通过updateFromMap可以知道，能否复用，要么就是newFiber.key能对应的oldFiber，要么就是newIdx能找到对应的oldFiber，
+					// 并且经过updateTextNode()等方法处理还能复用（也就是tag都相同的元素）
+					// 所以删除自然按照updateFromMap的模式去删除
+					existingChildren.delete(newFiber.key === null ? newIdx : newFiber.key);
 				}
 				// 复用则检测是否需要移动（移动则加上Placement） + 插入则直接返回传入的lastPlaceIndex，然后加上Placement
 				lastPlaceIndex = placeChild(newFiber, lastPlaceIndex, newIdx);
