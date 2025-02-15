@@ -131,7 +131,12 @@ function updateHostComponent(oldFiber: Fiber, workInProgress: Fiber, type: strin
 	}
 
 	const instance = workInProgress.stateNode;
-	const updatePayload: string[] = diffProperties(instance, workInProgress.type, oldProps, newProps);
+	const updatePayload: string[] | null = diffProperties(
+		instance,
+		workInProgress.type,
+		oldProps,
+		newProps,
+	);
 	workInProgress.updateQueue = updatePayload;
 	if (updatePayload) {
 		workInProgress.flags |= Update;

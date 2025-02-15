@@ -36,10 +36,22 @@ export function diffProperties(
 		if (oldProps[newPropKey] && oldProps[newPropKey] === newProps[newPropKey]) {
 			continue;
 		}
-		updatePayload.push(newPropKey);
-		updatePayload.push(newProps[newPropKey]);
+		const newPropValue = newPropKey[newPropKey];
+
+		switch (newPropKey) {
+			case "children":
+				if (typeof newPropValue === "string" || typeof newPropValue === "number") {
+					// domElement.textContent = "";
+					updatePayload.push("");
+				}
+				break;
+			default:
+				updatePayload.push(newPropKey);
+				updatePayload.push(newProps[newPropKey]);
+				break;
+		}
 	}
-	return updatePayload;
+	return updatePayload.length ? updatePayload : null;
 }
 
 export function updateDOMProperties(domElement: HTMLElement, updatePayload: any[]) {
