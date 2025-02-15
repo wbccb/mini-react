@@ -40,7 +40,17 @@ function completeWork(
 			return null;
 		}
 		case HostText: {
-			workInProgress.stateNode = document.createTextNode(newProps);
+			const newText = newProps;
+			const oldText = current?.memoizedProps;
+			console.log("completeWork HostText", oldText, newText);
+			if (current && workInProgress.stateNode !== null) {
+				// updateHostText(current, workInProgress, oldText, newText);
+				if (oldText !== newText) {
+					workInProgress.flags |= Update;
+				}
+			} else {
+				workInProgress.stateNode = document.createTextNode(newProps);
+			}
 			bubbleProperties(workInProgress);
 			return null;
 		}
@@ -121,6 +131,7 @@ function bubbleProperties(workInProgress: Fiber) {
 		workInProgress.childLanes = newChildLanes;
 	} else {
 		// 没有改变
+		console.error("bubbleProperties 没有改变");
 	}
 }
 
@@ -139,6 +150,12 @@ function updateHostComponent(oldFiber: Fiber, workInProgress: Fiber, type: strin
 	);
 	workInProgress.updateQueue = updatePayload;
 	if (updatePayload) {
+		workInProgress.flags |= Update;
+	}
+}
+
+function updateHostText(oldFiber: Fiber, workInProgress: Fiber, oldText: string, newText: any) {
+	if (oldText !== newText) {
 		workInProgress.flags |= Update;
 	}
 }
