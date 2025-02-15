@@ -291,8 +291,40 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		}
 
 		// 3.2.3 新的节点和旧的节点还有，进行diff复用
+		const existingChildren = mapRemainingChildren(parentFiber, oldFiber);
+		for (; newIdx < newChild.length; newIdx++) {
+			// 复用或者插入=>得到新的fiber
+			const newFiber = updateFromMap(
+				existingChildren,
+				parentFiber,
+				newIdx,
+				newChild[newIdx],
+				lanes,
+			);
+
+			if (newFiber !== null) {
+				if (shouldTrackSideEffects && newFiber.alternate !== null) {
+					// 复用成功，删除map数据
+					existingChildren.delete();
+				}
+				// 复用则检测是否需要移动（移动则加上Placement） + 插入则直接返回传入的lastPlaceIndex，然后加上Placement
+				lastPlaceIndex = placeChild(newFiber, lastPlaceIndex, newIdx);
+				if (previousNewFiber === null) {
+					// 为了避免_newFiber为空的情况
+					resultingFirstFiber = newFiber;
+				} else {
+					previousNewFiber.sibling = newFiber;
+				}
+				previousNewFiber = newFiber;
+			}
+		}
 
 		// 3.2.4 新的节点已经新增/移动完毕，剩下的旧节点应该删除
+		if (shouldTrackSideEffects) {
+			existingChildren.forEach((oldChild: Fiber) => {
+				deleteChild(parentFiber, oldChild);
+			});
+		}
 
 		return resultingFirstFiber;
 	}
