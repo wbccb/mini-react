@@ -20,10 +20,10 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 		const deletions = parentFiber.deletions;
 		if (deletions === null) {
 			parentFiber.deletions = [childFiber];
-			parentFiber.flags = parentFiber.flags | ChildDeletion;
 		} else {
 			deletions.push(childFiber);
 		}
+		parentFiber.flags = parentFiber.flags | ChildDeletion;
 	}
 
 	function deleteRemainingChildren(parentFiber: Fiber, childFiber: Fiber | null) {
