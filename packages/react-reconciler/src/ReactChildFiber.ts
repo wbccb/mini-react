@@ -382,6 +382,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 
 		if (typeof newChild === "object" && newChild !== null) {
 			switch (newChild.$$typeof) {
+				// 新：单个元素
 				case REACT_ELEMENT_TYPE: {
 					const newFiber = reconcileSingleElement(parentFiber, oldFiberFirstChild, newChild, lanes);
 					const flagsNewFiber = placeSingleChild(newFiber);
@@ -389,29 +390,21 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
 				}
 			}
 
+			// 新：数组
 			if (Array.isArray(newChild) || getIteratorFn(newChild)) {
-				// 数组或者可迭代对象
 				return reconcileChildrenArray(parentFiber, oldFiberFirstChild, newChild, lanes);
 			}
 		}
 
+		// 处理文本类型
 		if ((typeof newChild === "string" && newChild !== "") || typeof newChild === "number") {
 			return placeSingleChild(
 				reconcileSingleTextNode(parentFiber, oldFiberFirstChild, "" + newChild, lanes),
 			);
 		}
 
-		const childString = Object.prototype.toString.call(newChild);
-		// throw new Error(
-		// 	`Objects are not valid as a React child (found: ${
-		// 		childString === "[object Object]"
-		// 			? "object with keys {" + Object.keys(newChild).join(", ") + "}"
-		// 			: childString
-		// 	}). ` +
-		// 		"If you meant to render a collection of children, use an array " +
-		// 		"instead.",
-		// );
-		return null;
+		// 新的数据为空，直接删除旧的所有数据
+		return deleteRemainingChildren(parentFiber, oldFiberFirstChild);
 	}
 
 	return reconcileChildFibers;
