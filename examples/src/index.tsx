@@ -2,7 +2,8 @@ import { createRoot } from "react-dom/client";
 import ClassComponentTest from "./components/ClassComponentTest";
 import FunctionComponentTest from "./components/FunctionComponentTest";
 import TestuseReducerAnduseState from "./hooks/useReducer_useState";
-import { DiffDelete } from "./diff/diff-delete";
+import { DiffDelete_insert } from "./diff/diff-delete_insert";
+import { DiffMulti } from "./diff/diff-multi";
 const domNode = document.getElementById("root") as HTMLElement;
 const root = createRoot(domNode);
 // ----------------------测试多种数据初始化逻辑----------------------
@@ -34,7 +35,8 @@ const root = createRoot(domNode);
 // ======================测试diff======================
 const rootData = (
 	<div id="我是最外层的">
-		<DiffDelete />
+		{/*<DiffDelete_insert />*/}
+		<DiffMulti />
 	</div>
 );
 
