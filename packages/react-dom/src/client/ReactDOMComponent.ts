@@ -36,13 +36,16 @@ export function diffProperties(
 		if (oldProps[newPropKey] && oldProps[newPropKey] === newProps[newPropKey]) {
 			continue;
 		}
-		const newPropValue = newPropKey[newPropKey];
+		const newPropValue = newProps[newPropKey];
 
 		switch (newPropKey) {
 			case "children":
-				if (typeof newPropValue === "string" || typeof newPropValue === "number") {
-					// domElement.textContent = "";
-					updatePayload.push("");
+				{
+					if (typeof newPropValue === "string" || typeof newPropValue === "number") {
+						// domElement.textContent = "";
+						updatePayload.push("children");
+						updatePayload.push(newPropValue);
+					}
 				}
 				break;
 			default:
