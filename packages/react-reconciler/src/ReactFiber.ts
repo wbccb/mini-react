@@ -157,7 +157,7 @@ class FiberNode {
 function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
 	let workInProgress = current.alternate;
 	if (workInProgress === null) {
-		workInProgress = createFiber(current.tag, pendingProps, null, current.mode);
+		workInProgress = createFiber(current.tag, pendingProps, current.key, current.mode);
 		workInProgress.type = current.type;
 		workInProgress.elementType = current.elementType;
 		workInProgress.stateNode = current.stateNode;
@@ -177,6 +177,7 @@ function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
 	workInProgress.updateQueue = current.updateQueue;
 
 	workInProgress.sibling = current.sibling;
+	workInProgress.index = current.index;
 
 	workInProgress.pendingProps = pendingProps;
 
