@@ -67,8 +67,7 @@ export function updateDOMProperties(domElement: HTMLElement, updatePayload: any[
 		} else if (propKey === "children") {
 			setTextContent(domElement, propValue);
 		} else {
-			domElement[propKey] = propValue;
-
+			(domElement as any)[propKey] = propValue;
 			// 事件后面完善
 		}
 	}
