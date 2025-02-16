@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>更新: 节点删除</title>
+</head>
+
+<body>
+<div id="root"></div>
+</body>
+
+<script src='react.umd.development.js'></script>
+<script src='react-dom.umd.development.js'></script>
+<script src="babel.js"></script>
+<script type="text/babel">
+    const domNode = document.getElementById('root');
+    const root = ReactDOM.createRoot(domNode);
+    const {useState} = React;
+
+    const DiffDelete = () => {
+
+        const [count, setCount] = useState(0);
+
+        function handleClick() {
+            setCount(count + 1);
+        };
+
+        const array1 = [1, 2, 3, 4];
+        const array2 = [1, 4, 2, 1000, 1111];
+
+        return (
+            <React.Fragment>
+                <button id="我是useState的button" onClick={() => handleClick()}>增加useState</button>
+                <div>
+                    {count % 2 === 0
+                        ? array1.map((item) => <span key={item}>{item}</span>)
+                        : array2.map((item) => <span key={item}>{item}</span>)}
+                </div>
+            </React.Fragment>
+        );
+    };
+
+
+    root.render(<DiffDelete/>);
+</script>
+</html>
