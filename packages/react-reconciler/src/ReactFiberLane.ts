@@ -68,6 +68,10 @@ export function mergeLanes(a: Lanes | Lane, b: Lanes | Lane) {
 	return a | b;
 }
 
+export function removeLanes(set: Lanes, subset: Lanes | Lane): Lanes {
+	return set & ~subset;
+}
+
 export function includesBlockingLane(root: FiberRoot, lanes: Lanes) {
 	const SyncDefaultLanes =
 		InputContinuousHydrationLane | InputContinuousLane | DefaultHydrationLane | DefaultLane;

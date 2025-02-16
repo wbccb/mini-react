@@ -1,12 +1,13 @@
 import { Fiber } from "./ReactInternalTypes";
 import { Props } from "react-dom/client";
-import { Lane, Lanes, NoLanes } from "./ReactFiberLane";
+import { Lane, Lanes, NoLanes, removeLanes } from "./ReactFiberLane";
 import { scheduleUpdateOnFiber, State } from "./ReactFiberClassUpdateQueue";
 import { requestEventTime, requestUpdateLane } from "./ReactFiberWorkLoop";
 import {
 	enqueueConcurrentClassUpdate,
 	enqueueConcurrentHookUpdate,
 } from "./ReactFiberConcurrentUpdates";
+import { Passive, Update } from "./ReactFiberFlags";
 
 let renderLanes: Lanes = NoLanes;
 let currentlyRenderingFiber: Fiber | null = null;
@@ -285,4 +286,11 @@ function useState(initialState: State) {
 	}
 }
 
-export { renderWithHooks, useReducer, useState };
+function bailoutHooks(current: Fiber, workInProgress: Fiber, lanes: Lanes) {
+	workInProgress.updateQueue = current.updateQueue;
+
+	workInProgress.flags &= ~(Passive | Update);
+	current.lanes = removeLanes(current.lanes, lanes);
+}
+
+export { renderWithHooks, useReducer, useState, bailoutHooks };

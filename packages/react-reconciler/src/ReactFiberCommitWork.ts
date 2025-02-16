@@ -57,6 +57,7 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 			recursivelyTraverseMutationEffects(root, finishedWork);
 			commitReconciliationEffects(finishedWork);
 			if (flags & Update) {
+				// TODO 待完善useEffect和useLayoutEffect的相关逻辑
 			}
 			return;
 		case HostComponent:
@@ -78,6 +79,16 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 				}
 			}
 			return;
+		case HostText: {
+			recursivelyTraverseMutationEffects(root, finishedWork);
+			commitReconciliationEffects(finishedWork);
+			if (flags & Update) {
+				const textInstance = finishedWork.stateNode;
+				const newText = finishedWork.memoizedProps;
+				textInstance.nodeValue = newText;
+			}
+			return;
+		}
 		default: {
 			recursivelyTraverseMutationEffects(root, finishedWork);
 			commitReconciliationEffects(finishedWork);

@@ -12,7 +12,7 @@ import {
 import { RootState } from "./ReactFiberRoot";
 import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
 import { PerformedWork } from "./ReactFiberFlags";
-import { renderWithHooks } from "./ReactFiberHooks";
+import { bailoutHooks, renderWithHooks } from "./ReactFiberHooks";
 import {
 	adoptClassInstance,
 	constructClassInstance,
@@ -28,6 +28,7 @@ function markRef(current: Fiber | null, workInProgress: Fiber) {
  * 1. 对当前workInProgress进行beginWork()处理（reconcileChildren子节点，返回第一个子节点）
  * 2. 返回workInProgress.child子节点
  */
+let didReceiveUpdate = false;
 function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: Lanes): Fiber | null {
 	// 记住：当前fiber是已经创建好的，一开始是HostRoot（初始化就创建好的fiber)->reconcileChildren()创建fiber.child
 	// completeOfWork()切换当前fiber从HostRoot->上面创建的HostRoot.child作为当前fiber，然后继续reconcileChildren()创建当前fiber.child
@@ -35,6 +36,18 @@ function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: La
 
 	// 根据已经创建好的fiber，比对children，进行Flags的标记：能复用的打上Update标签，需要新增或者插入的打上Placement标签，需要调用生命周期的打上Snapshot
 	// 返回当前fiber的第一个child fiber
+	if (current !== null) {
+		const oldProps = current.memoizedProps;
+		const newProps = workInProgress.pendingProps;
+
+		if (oldProps !== newProps) {
+			didReceiveUpdate = true;
+		} else {
+			didReceiveUpdate = false;
+		}
+	} else {
+		didReceiveUpdate = false;
+	}
 
 	workInProgress.lanes = NoLanes;
 	switch (workInProgress.tag) {
@@ -185,10 +198,22 @@ function updateFunctionComponent(
 		nextProps,
 		renderLanes,
 	);
+
+	if (current !== null && !didReceiveUpdate) {
+		bailoutHooks(current, workInProgress, renderLanes);
+		return bailoutOnAlreadyFinishedWork();
+	}
+
 	workInProgress.flags |= PerformedWork;
 	// 省略bailoutOnAlreadyFinishedWork逻辑
 	reconcileChildren(current, workInProgress, nextChildren, renderLanes);
 	return workInProgress.child;
+}
+
+function bailoutOnAlreadyFinishedWork() {
+	// 如果有更新的，则复制fiber
+	// 如果fiber.lanes没有需要更新，直接返回null
+	return null;
 }
 
 function updateClassComponent(
