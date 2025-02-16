@@ -7,7 +7,9 @@ import {
 	enqueueConcurrentClassUpdate,
 	enqueueConcurrentHookUpdate,
 } from "./ReactFiberConcurrentUpdates";
-import { Passive, Update } from "./ReactFiberFlags";
+import { Flags, Passive, PassiveStatic, Update } from "./ReactFiberFlags";
+import { HookFlags, HookHasEffect, HookPassive } from "./ReactHookEffectTags";
+import objectIs from "shared/src/objectIs";
 
 let renderLanes: Lanes = NoLanes;
 let currentlyRenderingFiber: Fiber | null = null;
@@ -293,4 +295,144 @@ function bailoutHooks(current: Fiber, workInProgress: Fiber, lanes: Lanes) {
 	current.lanes = removeLanes(current.lanes, lanes);
 }
 
-export { renderWithHooks, useReducer, useState, bailoutHooks };
+type StoreConsistencyCheck<T> = {
+	value: T;
+	getSnapshot: () => T;
+};
+export type Effect = {
+	tag: HookFlags;
+	create: CreateFnType;
+	destroy: (() => void) | void;
+	deps: DepsType;
+	next: Effect | null;
+};
+export type FunctionComponentUpdateQueue = {
+	lastEffect: Effect | null;
+	stores: Array<StoreConsistencyCheck<any>> | null;
+};
+
+/**
+ * 构建循环单链表结构数据
+ */
+function pushEffect(
+	hookFlags: HookFlags,
+	create: CreateFnType,
+	destroy: (() => void) | void,
+	deps: DepsType | null,
+) {
+	const effect: Effect = {
+		tag: hookFlags,
+		create: create,
+		destroy: destroy,
+		deps: deps,
+		next: null,
+	};
+	let componentUpdateQueue: FunctionComponentUpdateQueue | null = currentlyRenderingFiber!
+		.updateQueue as any;
+
+	if (componentUpdateQueue === null) {
+		componentUpdateQueue = createFunctionComponentUpdateQueue();
+		currentlyRenderingFiber!.updateQueue = componentUpdateQueue as any;
+
+		effect.next = effect;
+		componentUpdateQueue.lastEffect = effect;
+	} else {
+		const lastEffect = componentUpdateQueue.lastEffect;
+		if (lastEffect === null) {
+			effect.next = effect;
+			componentUpdateQueue.lastEffect = effect;
+		} else {
+			const firstEffect: Effect = lastEffect.next!;
+			lastEffect.next = effect;
+			effect.next = firstEffect;
+
+			componentUpdateQueue.lastEffect = effect;
+		}
+	}
+	return effect;
+}
+
+function createFunctionComponentUpdateQueue(): FunctionComponentUpdateQueue {
+	return {
+		lastEffect: null,
+		stores: null,
+	};
+}
+
+function areHookInputsEqual(nextDeps: Array<any>, oldDeps: Array<any>) {
+	if (oldDeps === null) return false;
+
+	for (let i = 0; i < nextDeps.length && i < oldDeps.length; i++) {
+		if (objectIs(nextDeps[i], oldDeps[i])) {
+			continue;
+		}
+
+		return false;
+	}
+	return true;
+}
+
+function useEffectImpl(
+	fiberFlags: Flags,
+	hookFlags: HookFlags,
+	create: CreateFnType,
+	deps: DepsType,
+) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		// mount
+		const hook = mountWorkProgressHook();
+		const nextDeps = deps === undefined ? null : deps;
+		currentlyRenderingFiber!.flags |= fiberFlags;
+		hook.memoizedState = pushEffect(HookHasEffect | hookFlags, create, undefined, nextDeps);
+	} else {
+		const hook: Hook = updateWorkInProgressHook() as Hook;
+		const nextDeps = deps === undefined ? null : deps;
+		let destroy: (() => void) | void = undefined;
+		// 更新阶段，比较deps有没有变化
+
+		// currentHook是根据代码的执行顺序确定的，这就是为什么useXX()要写在FunctionComponent最外层的原因
+		// 比如useEffect() -> useLayoutEffect()
+		// 那么你下一次执行就是 currentHook = useEffect()，然后才是currentHook = useLayoutEffect()，而不会先复制current = useLayoutEffect()
+		// 因此当前currentHook就是目前的hook
+		if (currentHook !== null) {
+			const prevEffect: Effect = currentHook?.memoizedState;
+			destroy = prevEffect.destroy;
+			if (nextDeps !== null) {
+				const prevDeps = prevEffect.deps as Array<any>;
+				if (areHookInputsEqual(nextDeps, prevDeps)) {
+					// 没有变化，不用更新
+					// 重新调用pushEffect，传入hookFlags重置flags
+					hook.memoizedState = pushEffect(hookFlags, create, destroy, nextDeps);
+					return;
+				}
+			}
+		}
+
+		// 如果需要更新，则设置flags为fiberFlags，并且pushEffect增加HookHasEffect
+		currentlyRenderingFiber!.flags |= fiberFlags;
+		hook!.memoizedState = pushEffect(HookHasEffect | hookFlags, create, destroy, nextDeps);
+	}
+}
+
+function mountEffect(create: CreateFnType, deps: DepsType) {
+	return useEffectImpl(Passive | PassiveStatic, HookPassive, create, deps);
+}
+
+function updateEffect(create: CreateFnType, deps: DepsType) {
+	return useEffectImpl(Passive, HookPassive, create, deps);
+}
+
+type CreateFnType = () => () => void;
+type DepsType = Array<any> | void | null;
+
+function useEffect(create: CreateFnType, deps: DepsType) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		return mountEffect(create, deps);
+	} else {
+		return updateEffect(create, deps);
+	}
+}
+
+export { renderWithHooks, useReducer, useState, bailoutHooks, useEffect };
