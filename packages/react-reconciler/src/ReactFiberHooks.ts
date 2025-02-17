@@ -302,7 +302,7 @@ type StoreConsistencyCheck<T> = {
 export type Effect = {
 	tag: HookFlags;
 	create: CreateFnType;
-	destroy: (() => void) | void;
+	destroy: (() => void) | void | null;
 	deps: DepsType;
 	next: Effect | null;
 };
@@ -317,7 +317,7 @@ export type FunctionComponentUpdateQueue = {
 function pushEffect(
 	hookFlags: HookFlags,
 	create: CreateFnType,
-	destroy: (() => void) | void,
+	destroy: (() => void) | void | null,
 	deps: DepsType | null,
 ) {
 	const effect: Effect = {
@@ -388,7 +388,7 @@ function useEffectImpl(
 	} else {
 		const hook: Hook = updateWorkInProgressHook() as Hook;
 		const nextDeps = deps === undefined ? null : deps;
-		let destroy: (() => void) | void = undefined;
+		let destroy: (() => void) | void | null = null;
 		// 更新阶段，比较deps有没有变化
 
 		// currentHook是根据代码的执行顺序确定的，这就是为什么useXX()要写在FunctionComponent最外层的原因

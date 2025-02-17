@@ -48,7 +48,10 @@ import {
 	commitBeforeMutationEffects,
 	commitLayoutEffects,
 	commitMutationEffects,
+	commitPassiveMountEffects,
+	commitPassiveUnmountEffects,
 } from "./ReactFiberCommitWork";
+import { FiberRootNode } from "./ReactFiberRoot";
 type ExecutionContext = number;
 
 const NoTimestamp = -1;
@@ -343,6 +346,8 @@ function commitRoot(root: FiberRoot) {
 }
 
 let rootDoesHavePassiveEffects = false;
+let rootWithPendingPassiveEffects: FiberRootNode | null = null;
+let pendingPassiveEffectsLanes = NoLanes;
 function commitRootImpl(root: FiberRoot) {
 	const finishedWork: Fiber = root.finishedWork!; // root.current.alternate就是finishedWork
 	const lanes = root.finishedLanes;
@@ -397,6 +402,8 @@ function commitRootImpl(root: FiberRoot) {
 
 	if (rootDoesHavePassiveEffects) {
 		rootDoesHavePassiveEffects = false;
+		rootWithPendingPassiveEffects = root;
+		pendingPassiveEffectsLanes = lanes;
 	}
 
 	ensureRootIsScheduled(root, now());
@@ -407,6 +414,13 @@ function commitRootImpl(root: FiberRoot) {
 }
 
 export function flushPassiveEffects(): boolean {
+	return flushPassiveEffectsImpl();
+}
+function flushPassiveEffectsImpl() {
+	const root: FiberRootNode = rootWithPendingPassiveEffects!;
+	const lane = pendingPassiveEffectsLanes;
+	commitPassiveUnmountEffects(root.current!);
+	commitPassiveMountEffects(root, root.current!, lane);
 	return true;
 }
 
