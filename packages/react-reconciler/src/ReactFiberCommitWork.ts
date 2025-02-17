@@ -608,7 +608,21 @@ function commitHookEffectListUnmount(flags: HookFlags, fiber: Fiber, parentFiber
 }
 
 // 执行useEffect的create()方法
-function commitHookEffectListMount(flags: HookFlags, fiber: Fiber) {}
+function commitHookEffectListMount(flags: HookFlags, fiber: Fiber) {
+	const updateQueue: FunctionComponentUpdateQueue = fiber.updateQueue as any;
+	const lastEffect = updateQueue.lastEffect;
+	if (lastEffect !== null) {
+		const firstEffect = lastEffect.next!;
+		let currentEffect = firstEffect;
+		do {
+			if ((currentEffect.tag & flags) !== NoFlags) {
+				const create = currentEffect.create;
+				currentEffect.destroy = create();
+			}
+			currentEffect = currentEffect.next!;
+		} while (currentEffect !== firstEffect);
+	}
+}
 
 export {
 	commitBeforeMutationEffects,
