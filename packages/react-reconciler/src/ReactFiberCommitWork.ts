@@ -571,7 +571,7 @@ function commitPassiveMountEffects_complete(
 		// 深度遍历执行，从最底部节点开始向上parent执行，如果遇到sibling不是最底部，则继续向下遍历拿到最底部节点，然后再从最底部节点向上parent执行
 		if ((fiber.flags & Passive) !== NoFlags) {
 			switch (fiber.tag) {
-				case HostComponent:
+				case FunctionComponent:
 					commitHookEffectListMount(HookPassive | HookHasEffect, fiber);
 					break;
 			}
