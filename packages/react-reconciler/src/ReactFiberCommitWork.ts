@@ -615,7 +615,7 @@ function commitHookEffectListMount(flags: HookFlags, fiber: Fiber) {
 		const firstEffect = lastEffect.next!;
 		let currentEffect = firstEffect;
 		do {
-			if ((currentEffect.tag & flags) !== NoFlags) {
+			if ((currentEffect.tag & flags) === flags) {
 				const create = currentEffect.create;
 				currentEffect.destroy = create();
 			}
