@@ -50,9 +50,12 @@ export function diffProperties(
 				break;
 			default:
 				updatePayload.push(newPropKey);
-				updatePayload.push(newProps[newPropKey]);
+				updatePayload.push(newPropValue);
 				break;
 		}
+	}
+	if (updatePayload.length) {
+		console.log("====updatePayload====改变了", updatePayload);
 	}
 	return updatePayload.length ? updatePayload : null;
 }
