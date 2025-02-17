@@ -588,7 +588,24 @@ function commitPassiveMountEffects_complete(
 	}
 }
 // 执行useEffect的destroy()方法
-function commitHookEffectListUnmount(flags: HookFlags, fiber: Fiber, parentFiber: Fiber) {}
+function commitHookEffectListUnmount(flags: HookFlags, fiber: Fiber, parentFiber: Fiber) {
+	const updateQueue: FunctionComponentUpdateQueue = fiber.updateQueue as any;
+	const lastEffect = updateQueue.lastEffect;
+	if (lastEffect !== null) {
+		const firstEffect = lastEffect.next!;
+		let currentEffect = firstEffect;
+		do {
+			if ((currentEffect.tag & flags) !== NoFlags) {
+				let destroy = currentEffect.destroy;
+				currentEffect.destroy = null;
+				if (destroy) {
+					destroy();
+				}
+			}
+			currentEffect = currentEffect.next!;
+		} while (currentEffect !== firstEffect);
+	}
+}
 
 // 执行useEffect的create()方法
 function commitHookEffectListMount(flags: HookFlags, fiber: Fiber) {}
