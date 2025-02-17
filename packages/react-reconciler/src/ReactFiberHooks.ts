@@ -10,6 +10,7 @@ import {
 import { Flags, Passive, PassiveStatic, Update } from "./ReactFiberFlags";
 import { HookFlags, HookHasEffect, HookPassive } from "./ReactHookEffectTags";
 import objectIs from "shared/src/objectIs";
+import { markWorkInProgressReceivedUpdate } from "./ReactFiberBeginWork";
 
 let renderLanes: Lanes = NoLanes;
 let currentlyRenderingFiber: Fiber | null = null;
@@ -172,12 +173,11 @@ function updateReducer(reducer: Reducer, initialArg: any, init?: (initialArg: an
 		// currentHook!.baseQueue = baseQueue;
 		queue.pending = null;
 	}
-
+	let newState = currentHook!.baseState;
 	// 遍历baseQueue的所有节点，不断调用reducer(最新state, action)来获取最新值 => 不断更新hook.baseState
 	if (baseQueue !== null) {
 		// 旧的tree是currentHook对应的tree，我们需要利用旧的tree去计算出新的值，然后赋值到新的tree上
 		const first = baseQueue.next;
-		let newState = currentHook!.baseState;
 
 		let update = first;
 		do {
@@ -186,16 +186,20 @@ function updateReducer(reducer: Reducer, initialArg: any, init?: (initialArg: an
 
 			update = update!.next;
 		} while (update !== null && update !== first);
-
-		hook.memoizedState = newState;
-		// 如果有shouldSkipUpdate=true，则hook.baseState=null,如果为false，则hook.baseState=newState
-		hook.baseState = newState;
 	}
 
 	// 对于不需要更新的hook，baseQueue为空
 	if (baseQueue === null) {
 		queue.lanes = NoLanes;
 	}
+
+	if (!is(newState, hook.memoizedState)) {
+		markWorkInProgressReceivedUpdate();
+	}
+
+	hook.memoizedState = newState;
+	// 如果有shouldSkipUpdate=true，则hook.baseState=null,如果为false，则hook.baseState=newState
+	hook.baseState = newState;
 
 	// 	返回hook.memoizedState, dispatch
 	return [hook.memoizedState, queue.dispatch];
@@ -423,10 +427,10 @@ function updateEffect(create: CreateFnType, deps: DepsType) {
 	return useEffectImpl(Passive, HookPassive, create, deps);
 }
 
-type CreateFnType = () => () => void;
+type CreateFnType = () => (() => void) | void;
 type DepsType = Array<any> | void | null;
 
-function useEffect(create: CreateFnType, deps: DepsType) {
+function useEffect(create: CreateFnType, deps?: DepsType) {
 	const current = currentlyRenderingFiber?.alternate;
 	if (!current || current.memoizedState === null) {
 		return mountEffect(create, deps);

@@ -184,6 +184,10 @@ function mountIndeterminateComponent(
 	}
 }
 
+export function markWorkInProgressReceivedUpdate() {
+	didReceiveUpdate = true;
+}
+
 function updateFunctionComponent(
 	current: Fiber | null,
 	workInProgress: Fiber,
