@@ -62,6 +62,7 @@ function renderWithHooks(
 	currentlyRenderingFiber = workInProgress;
 
 	workInProgress.memoizedState = null;
+	workInProgress.updateQueue = null;
 	workInProgress.lanes = NoLanes;
 
 	// 切换到mountReducer/updateReducer
