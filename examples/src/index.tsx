@@ -1,8 +1,8 @@
 import { createRoot } from "react-dom/client";
 import ClassComponentTest from "./components/ClassComponentTest";
 import FunctionComponentTest from "./components/FunctionComponentTest";
-import TestuseReducerAnduseState from "./hooks/useReducer_useState";
-import { TestUseEffect } from "./hooks/useEffect";
+import TestuseReducerAnduseState from "./hooks/useReducer&useState";
+import { TestUseEffectAndUseLayoutEffect } from "./hooks/useEffect&useLayoutEffect";
 import { DiffDelete_insert } from "./diff/diff-delete_insert";
 import { DiffMulti } from "./diff/diff-multi";
 const domNode = document.getElementById("root") as HTMLElement;
@@ -47,7 +47,7 @@ const root = createRoot(domNode);
 // ======================测试useEffect======================
 const rootData = (
 	<div id="我是最外层的">
-		<TestUseEffect />
+		<TestUseEffectAndUseLayoutEffect />
 	</div>
 );
 

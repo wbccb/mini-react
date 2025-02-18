@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 
 var stateFn: any;
 var increateAge: any;
-export const TestUseEffect = () => {
+export const TestUseEffectAndUseLayoutEffect = () => {
 	var [count, setCount] = useState(0);
 	console.warn("useEffect", "count", count);
 
@@ -20,9 +20,9 @@ export const TestUseEffect = () => {
 
 	setTimeout(() => {
 		increateAge = document.getElementsByTagName("button");
-		console.warn("useEffect.tsx", increateAge);
+		console.warn("useEffect_LayoutEffect.tsx", increateAge);
 		if (increateAge && increateAge[0]) {
-			console.warn("useEffect.tsx increateAge[0]", increateAge[0]);
+			console.warn("useEffect_LayoutEffect.tsx increateAge[0]", increateAge[0]);
 			increateAge[0].addEventListener("click", stateFn);
 		}
 	}, 0);
@@ -35,6 +35,20 @@ export const TestUseEffect = () => {
 		console.log("createFn", "useEffect依赖count");
 		return () => {
 			console.log("createFn destory", "useEffect依赖count：destroy");
+		};
+	}, [count]);
+
+	useLayoutEffect(() => {
+		console.error("useLayoutEffect", "mount");
+		return () => {
+			console.error("useLayoutEffect destory");
+		};
+	}, []);
+
+	useLayoutEffect(() => {
+		console.error("useLayoutEffect", " mount useLayoutEffect依赖count");
+		return () => {
+			console.error("useLayoutEffect destory useLayoutEffect依赖count");
 		};
 	}, [count]);
 
