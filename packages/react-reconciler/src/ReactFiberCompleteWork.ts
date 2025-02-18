@@ -2,6 +2,7 @@ import { Fiber } from "./ReactInternalTypes";
 import { Lanes, mergeLanes, NoLane, NoLanes } from "./ReactFiberLane";
 import {
 	ClassComponent,
+	ContextProvider,
 	Fragment,
 	FunctionComponent,
 	HostComponent,
@@ -61,6 +62,11 @@ function completeWork(
 			bubbleProperties(workInProgress);
 			return null;
 		}
+		case ContextProvider:
+			const context = workInProgress.type._context;
+			popProvider(context);
+			bubbleProperties(workInProgress);
+			return null;
 	}
 
 	throw new Error(

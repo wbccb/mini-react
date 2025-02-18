@@ -2,6 +2,7 @@ import { Fiber } from "./ReactInternalTypes";
 import { Lanes, NoLanes } from "./ReactFiberLane";
 import {
 	ClassComponent,
+	ContextProvider,
 	Fragment,
 	FunctionComponent,
 	HostComponent,
@@ -19,6 +20,8 @@ import {
 	mountClassInstance,
 } from "./ReactFiberClassComponent";
 import { processUpdateQueue } from "./ReactFiberClassUpdateQueue";
+import { ReactContext } from "shared";
+import objectIs from "shared/src/objectIs";
 
 function markRef(current: Fiber | null, workInProgress: Fiber) {
 	// TOOD 涉及到Ref相关内容在实现
@@ -76,6 +79,8 @@ function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: La
 			const _Component = workInProgress.type;
 			const props = workInProgress.pendingProps;
 			return updateClassComponent(current, workInProgress, _Component, props, renderLanes);
+		case ContextProvider:
+			return updateContextProvider(current, workInProgress, renderLanes);
 	}
 
 	// 至于当前fiber的children的fiber构建，会在completeUnitOfWork()迭代方法中触发
@@ -260,6 +265,44 @@ function finishClassComponent(
 
 	reconcileChildren(current, workInProgress, nextChildren, renderLanes);
 	workInProgress.memoizedState = instance.state;
+	return workInProgress.child;
+}
+
+function updateContextProvider(current: Fiber, workInProgress: Fiber, renderLanes: Lanes) {
+	// jsx转化为：
+	// {
+	// 	$$typeof: Symbol(react.element),
+	// 		type: Context.Provider, // 关键属性
+	//  	props: { value, children },
+	// }
+
+	// Context.Provider = {
+	//   $$typeof: REACT_PROVIDER_TYPE,
+	//   _context: context,
+	// };
+
+	const providerType = workInProgress.type;
+	const context = providerType._context;
+	const newProps = workInProgress.pendingProps;
+	const newValue = newProps.value; // <Context.Provider value={}/>
+	const oldProps = workInProgress.memoizedProps;
+
+	pushProvider(workInProgress, context, newValue);
+
+	if (oldProps !== null) {
+		const oldValue = oldProps.value;
+		if (objectIs(oldValue, newValue)) {
+			if (oldProps.children === newProps.children) {
+				return bailoutOnAlreadyFinishedWork();
+			}
+		} else {
+			// 值改变了，需要动态通知childrenFiber，也就是遍历所有childFiber，然后给他们打上fiber.lanes = XXX以及创建对应的update放入到fiber.updateQueue中
+			propagateContextChange(workInProgress, context, renderLanes);
+		}
+	}
+
+	const newChildren = newProps.children;
+	reconcileChildren(current, workInProgress, newChildren, renderLanes);
 	return workInProgress.child;
 }
 

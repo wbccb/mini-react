@@ -11,6 +11,7 @@
   "dependencies": {
     "react-reconciler": "workspace:*",
     "react-dom": "workspace:*",
+    "shared": "workspace:*",
     "react": "18.3.1"
   },
   "devDependencies": {
