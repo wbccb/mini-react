@@ -18,7 +18,24 @@
 // }
 
 // 简化上面的代码为：
-import { useReducer, useState, useEffect, useLayoutEffect } from "react-reconciler";
+import {
+	useReducer,
+	useState,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useCallback,
+	useRef,
+} from "react-reconciler";
 import { Component } from "react";
 
-export { useReducer, useState, Component, useEffect, useLayoutEffect };
+export {
+	useReducer,
+	useState,
+	Component,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useCallback,
+	useRef,
+};

@@ -122,6 +122,9 @@ function commitLayoutEffectOnFiber(
 				throw new Error("LayoutEffects没处理HostRoot");
 				break;
 			}
+			case HostComponent:
+			case HostText:
+				break;
 			default:
 				throw new Error("LayoutEffects没处理default");
 				break;

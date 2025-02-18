@@ -219,7 +219,7 @@ function updateWorkInProgressHook() {
 		workInProgressHook = workInProgressHook.next;
 		currentHook = currentHook!.next;
 	}
-	return workInProgressHook;
+	return workInProgressHook!;
 }
 
 function basicStateReducer(state: State, action: any) {
@@ -364,7 +364,7 @@ function createFunctionComponentUpdateQueue(): FunctionComponentUpdateQueue {
 	};
 }
 
-function areHookInputsEqual(nextDeps: Array<any>, oldDeps: Array<any>) {
+function areHookInputsEqual(nextDeps: Array<any>, oldDeps: Array<any> | null) {
 	if (oldDeps === null) return false;
 
 	for (let i = 0; i < nextDeps.length && i < oldDeps.length; i++) {
@@ -457,4 +457,82 @@ function useLayoutEffect(create: CreateFnType, deps?: DepsType) {
 	}
 }
 
-export { renderWithHooks, useReducer, useState, bailoutHooks, useEffect, useLayoutEffect };
+function useMemo(create: CreateFnType, deps?: DepsType) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		const hook = mountWorkProgressHook();
+		const nextDeps = deps === undefined ? null : deps;
+		const nextValue = create();
+		hook.memoizedState = [nextValue, nextDeps];
+		return nextValue;
+	} else {
+		const hook = updateWorkInProgressHook();
+		const nextDeps = deps === undefined ? null : deps;
+
+		// 比对当前的deps是否发生了变化
+		const prevState = hook?.memoizedState;
+		if (prevState !== null && nextDeps !== null) {
+			const prevDeps = prevState[1];
+			if (areHookInputsEqual(nextDeps, prevDeps)) {
+				return prevDeps[0];
+			}
+		}
+
+		// 如果deps已经变化，则重新计算memo，并且更新memoziedState
+		const nextValue = create();
+		hook.memoizedState = [nextValue, nextDeps];
+		return nextValue;
+	}
+}
+
+function useCallback(callback: CreateFnType, deps?: DepsType) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		const hook = mountWorkProgressHook();
+		const nextDeps = deps === undefined ? null : deps;
+		hook.memoizedState = [callback, nextDeps];
+		return callback;
+	} else {
+		const hook = updateWorkInProgressHook();
+		const nextDeps = deps === undefined ? null : deps;
+		const prevState = hook.memoizedState;
+		if (prevState !== null) {
+			const prevDeps = prevState[1];
+			if (prevDeps !== null && nextDeps !== null) {
+				if (areHookInputsEqual(nextDeps, prevDeps)) {
+					return prevState[0];
+				}
+			}
+		}
+
+		hook.memoizedState = [callback, nextDeps];
+		return callback;
+	}
+}
+
+function useRef(initialValue: any) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		const hook = mountWorkProgressHook();
+		const ref = {
+			current: initialValue,
+		};
+		hook.memoizedState = ref;
+		return ref;
+	} else {
+		const hook = updateWorkInProgressHook();
+		return hook.memoizedState;
+	}
+}
+
+export {
+	renderWithHooks,
+	useReducer,
+	useState,
+	bailoutHooks,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useCallback,
+	useRef,
+};
