@@ -8,7 +8,7 @@ import {
 	enqueueConcurrentHookUpdate,
 } from "./ReactFiberConcurrentUpdates";
 import { Flags, Passive, PassiveStatic, Update } from "./ReactFiberFlags";
-import { HookFlags, HookHasEffect, HookPassive } from "./ReactHookEffectTags";
+import { HookFlags, HookHasEffect, HookLayout, HookPassive } from "./ReactHookEffectTags";
 import objectIs from "shared/src/objectIs";
 import { markWorkInProgressReceivedUpdate } from "./ReactFiberBeginWork";
 
@@ -440,4 +440,21 @@ function useEffect(create: CreateFnType, deps?: DepsType) {
 	}
 }
 
-export { renderWithHooks, useReducer, useState, bailoutHooks, useEffect };
+function mountLayoutEffect(create: CreateFnType, deps: DepsType) {
+	return useEffectImpl(Update, HookLayout, create, deps);
+}
+
+function updateLayoutEffect(create: CreateFnType, deps: DepsType) {
+	return useEffectImpl(Update, HookLayout, create, deps);
+}
+
+function useLayoutEffect(create: CreateFnType, deps?: DepsType) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		return mountLayoutEffect(create, deps);
+	} else {
+		return updateLayoutEffect(create, deps);
+	}
+}
+
+export { renderWithHooks, useReducer, useState, bailoutHooks, useEffect, useLayoutEffect };

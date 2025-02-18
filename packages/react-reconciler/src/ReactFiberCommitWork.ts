@@ -30,7 +30,7 @@ import {
 } from "react-dom/src/client/ReactDOMHostConfig";
 import { FiberNode } from "./ReactFiber";
 import { updateDOMProperties } from "react-dom/src/client/ReactDOMComponent";
-import { HookFlags, HookHasEffect, HookPassive } from "./ReactHookEffectTags";
+import { HookFlags, HookHasEffect, HookLayout, HookPassive } from "./ReactHookEffectTags";
 import { FunctionComponentUpdateQueue } from "./ReactFiberHooks";
 
 let nextEffect: Fiber | null = null;
@@ -109,6 +109,24 @@ function commitLayoutEffectOnFiber(
 	committedLanes: Lanes,
 ) {
 	// LayoutEffects真正执行地方
+	if ((finishedWork.flags & LayoutMask) !== NoFlags) {
+		switch (finishedWork.tag) {
+			case FunctionComponent:
+				commitHookEffectListMount(HookLayout | HookHasEffect, finishedWork);
+				break;
+			case ClassComponent: {
+				throw new Error("LayoutEffects没处理ClassComponent");
+				break;
+			}
+			case HostRoot: {
+				throw new Error("LayoutEffects没处理HostRoot");
+				break;
+			}
+			default:
+				throw new Error("LayoutEffects没处理default");
+				break;
+		}
+	}
 }
 
 function recursivelyTraverseMutationEffects(root: FiberRoot, parentFiber: Fiber) {
