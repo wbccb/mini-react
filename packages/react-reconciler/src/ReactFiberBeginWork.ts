@@ -22,6 +22,7 @@ import {
 import { processUpdateQueue } from "./ReactFiberClassUpdateQueue";
 import { ReactContext } from "shared";
 import objectIs from "shared/src/objectIs";
+import { prepareToReadContext } from "./ReactFiberNewContext";
 
 function markRef(current: Fiber | null, workInProgress: Fiber) {
 	// TOOD 涉及到Ref相关内容在实现
@@ -168,6 +169,8 @@ function mountIndeterminateComponent(
 	Component: any, // workInProgress.type
 	renderLanes: Lanes,
 ): Fiber | null {
+	prepareToReadContext(workInProgress, renderLanes);
+
 	const props = workInProgress.pendingProps; // 在createFiberFromElement()中获取fiber.props赋值给pendingProps，其中fiber.props是jsx自动解析获取的props数据
 	const value: any = renderWithHooks(null, workInProgress, Component, props, renderLanes);
 
@@ -200,6 +203,7 @@ function updateFunctionComponent(
 	nextProps: any,
 	renderLanes: Lanes,
 ) {
+	prepareToReadContext(workInProgress, renderLanes);
 	const nextChildren: any = renderWithHooks(
 		current,
 		workInProgress,
@@ -232,6 +236,7 @@ function updateClassComponent(
 	nextProps: any,
 	renderLanes: Lanes,
 ) {
+	prepareToReadContext(workInProgress, renderLanes);
 	const instance = workInProgress.stateNode;
 	let shouldUpdate;
 

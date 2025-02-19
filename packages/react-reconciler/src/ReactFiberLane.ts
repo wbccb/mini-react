@@ -64,6 +64,10 @@ export function getHighestPriorityLane(lanes: Lanes): Lane {
 	return lanes & -lanes;
 }
 
+export function includesSomeLane(a: Lanes | Lane, b: Lanes | Lane) {
+	return (a & b) !== NoLanes;
+}
+
 export function mergeLanes(a: Lanes | Lane, b: Lanes | Lane) {
 	return a | b;
 }

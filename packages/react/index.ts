@@ -26,8 +26,11 @@ import {
 	useMemo,
 	useCallback,
 	useRef,
+	useContext,
 } from "react-reconciler";
 import { Component } from "react";
+
+export * from "./src/ReactContext";
 
 export {
 	useReducer,
@@ -38,4 +41,5 @@ export {
 	useMemo,
 	useCallback,
 	useRef,
+	useContext,
 };

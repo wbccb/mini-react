@@ -14,7 +14,7 @@ import { ConcurrentMode, NoMode, TypeOfMode } from "./ReactTypeOfMode";
 import { Lanes, NoLanes } from "./ReactFiberLane";
 import { Flags, NoFlags, StaticMask } from "./ReactFiberFlags";
 import { REACT_FRAGMENT_TYPE, REACT_PROVIDER_TYPE, ReactElement } from "shared";
-import { Fiber } from "./ReactInternalTypes";
+import { Dependencies, Fiber } from "./ReactInternalTypes";
 
 export function createHostRootFiber(tag: RootTag) {
 	let mode;
@@ -128,6 +128,8 @@ class FiberNode {
 	memoizedProps: any; // 上一次使用的旧的props
 	pendingProps: any; // 新的props
 
+	dependencies: Dependencies | null;
+
 	index: number;
 
 	$$typeof?: Symbol;
@@ -163,6 +165,8 @@ class FiberNode {
 		this.pendingProps = pendingProps;
 
 		this.index = 0;
+
+		this.dependencies = null;
 	}
 }
 

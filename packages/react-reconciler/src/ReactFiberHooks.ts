@@ -1,4 +1,4 @@
-import { Fiber } from "./ReactInternalTypes";
+import { ContextDependency, Fiber } from "./ReactInternalTypes";
 import { Props } from "react-dom/client";
 import { Lane, Lanes, NoLanes, removeLanes } from "./ReactFiberLane";
 import { scheduleUpdateOnFiber, State } from "./ReactFiberClassUpdateQueue";
@@ -11,6 +11,7 @@ import { Flags, Passive, PassiveStatic, Update } from "./ReactFiberFlags";
 import { HookFlags, HookHasEffect, HookLayout, HookPassive } from "./ReactHookEffectTags";
 import objectIs from "shared/src/objectIs";
 import { markWorkInProgressReceivedUpdate } from "./ReactFiberBeginWork";
+import { ReactContext } from "shared";
 
 let renderLanes: Lanes = NoLanes;
 let currentlyRenderingFiber: Fiber | null = null;
@@ -525,6 +526,35 @@ function useRef(initialValue: any) {
 	}
 }
 
+function useContext(context: ReactContext) {
+	return readContext(context);
+}
+
+let lastContextDependency: ReactContext;
+function readContext(context: ReactContext) {
+	const value = context._currentValue;
+	if (lastContextDependency === context) {
+		// 同一个fiber使用同一个useContext(FirstContext)只添加一次依赖即可
+	} else {
+		const contextItem: ContextDependency = {
+			context: context,
+			memoizedValue: value,
+			next: null,
+		};
+		if (lastContextDependency === null) {
+			lastContextDependency = context;
+			currentlyRenderingFiber!.dependencies = {
+				lanes: NoLanes,
+				firstContext: contextItem,
+			};
+		} else {
+			lastContextDependency.next = contextItem;
+			lastContextDependency = lastContextDependency;
+		}
+	}
+	return value;
+}
+
 export {
 	renderWithHooks,
 	useReducer,
@@ -535,4 +565,5 @@ export {
 	useMemo,
 	useCallback,
 	useRef,
+	useContext,
 };
