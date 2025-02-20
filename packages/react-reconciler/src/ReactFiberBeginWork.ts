@@ -2,6 +2,7 @@ import { Fiber } from "./ReactInternalTypes";
 import { Lanes, mergeLanes, NoLanes } from "./ReactFiberLane";
 import {
 	ClassComponent,
+	ContextConsumer,
 	ContextProvider,
 	Fragment,
 	FunctionComponent,
@@ -13,7 +14,7 @@ import {
 import { RootState } from "./ReactFiberRoot";
 import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
 import { PerformedWork } from "./ReactFiberFlags";
-import { bailoutHooks, renderWithHooks } from "./ReactFiberHooks";
+import { bailoutHooks, renderWithHooks, useContext } from "./ReactFiberHooks";
 import {
 	adoptClassInstance,
 	constructClassInstance,
@@ -84,6 +85,8 @@ function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: La
 			return updateClassComponent(current, workInProgress, _Component, props, renderLanes);
 		case ContextProvider:
 			return updateContextProvider(current, workInProgress, renderLanes);
+		case ContextConsumer:
+			return updateContextConsumer(current, workInProgress, renderLanes);
 	}
 
 	// 至于当前fiber的children的fiber构建，会在completeUnitOfWork()迭代方法中触发
@@ -275,7 +278,7 @@ function finishClassComponent(
 	return workInProgress.child;
 }
 
-function updateContextProvider(current: Fiber, workInProgress: Fiber, renderLanes: Lanes) {
+function updateContextProvider(current: Fiber | null, workInProgress: Fiber, renderLanes: Lanes) {
 	// jsx转化为：
 	// {
 	// 	$$typeof: Symbol(react.element),
@@ -397,6 +400,26 @@ function propagateContextChange_eager(
 			}
 		}
 	}
+}
+
+function updateContextConsumer(current: Fiber | null, workInProgress: Fiber, renderLanes: Lanes) {
+	const context = workInProgress.type;
+
+	// 获取<Context.Consumer></Context.Consumer>包裹的内容，也就是children属性(JSX转化)
+	const newProps = workInProgress.pendingProps;
+	const render = newProps.children;
+
+	prepareToReadContext(workInProgress, renderLanes);
+	// 模拟FunctionComponent中遇到useContext()
+
+	// 由于每次压入<Context.Provider>时都会更新当前Context的值，遇到</Context.Provider>会弹出当前的值+恢复上一次的值
+	// 因此context._currentValue就是目前Context的最新值，不用考虑最近的Context是哪个！
+	const newValue = useContext(context);
+
+	const newChildren = render(newValue);
+
+	reconcileChildren(current, workInProgress, newChildren, renderLanes);
+	return workInProgress.child;
 }
 
 export { beginWork };

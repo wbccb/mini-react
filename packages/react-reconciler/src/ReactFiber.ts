@@ -1,6 +1,7 @@
 import { ConcurrentRoot, RootTag } from "./ReactRootTags";
 import {
 	ClassComponent,
+	ContextConsumer,
 	ContextProvider,
 	Fragment,
 	HostComponent,
@@ -13,7 +14,7 @@ import { State, FiberClassUpdateQueue } from "./ReactFiberClassUpdateQueue";
 import { ConcurrentMode, NoMode, TypeOfMode } from "./ReactTypeOfMode";
 import { Lanes, NoLanes } from "./ReactFiberLane";
 import { Flags, NoFlags, StaticMask } from "./ReactFiberFlags";
-import { REACT_FRAGMENT_TYPE, REACT_PROVIDER_TYPE, ReactElement } from "shared";
+import { REACT_CONTEXT_TYPE, REACT_FRAGMENT_TYPE, REACT_PROVIDER_TYPE, ReactElement } from "shared";
 import { Dependencies, Fiber } from "./ReactInternalTypes";
 
 export function createHostRootFiber(tag: RootTag) {
@@ -85,6 +86,9 @@ function createFiberFromTypeAndProps(
 					switch (type.$$typeof) {
 						case REACT_PROVIDER_TYPE:
 							fiberTag = ContextProvider;
+							break;
+						case REACT_CONTEXT_TYPE:
+							fiberTag = ContextConsumer;
 							break;
 					}
 				}
