@@ -12,6 +12,7 @@ import {
 } from "./ReactWorkTags";
 import { NoFlags, Snapshot, Update } from "./ReactFiberFlags";
 import { diffProperties } from "react-dom/src/client/ReactDOMComponent";
+import { popProvider } from "./ReactFiberNewContext";
 
 function completeWork(
 	current: Fiber | null,

@@ -22,7 +22,7 @@ import {
 import { processUpdateQueue } from "./ReactFiberClassUpdateQueue";
 import { ReactContext } from "shared";
 import objectIs from "shared/src/objectIs";
-import { prepareToReadContext } from "./ReactFiberNewContext";
+import { prepareToReadContext, pushProvider } from "./ReactFiberNewContext";
 import { scheduleContextWorkOnParentPath } from "react";
 
 function markRef(current: Fiber | null, workInProgress: Fiber) {
@@ -34,6 +34,7 @@ function markRef(current: Fiber | null, workInProgress: Fiber) {
  * 2. 返回workInProgress.child子节点
  */
 let didReceiveUpdate = false;
+
 function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: Lanes): Fiber | null {
 	// 记住：当前fiber是已经创建好的，一开始是HostRoot（初始化就创建好的fiber)->reconcileChildren()创建fiber.child
 	// completeOfWork()切换当前fiber从HostRoot->上面创建的HostRoot.child作为当前fiber，然后继续reconcileChildren()创建当前fiber.child
@@ -315,6 +316,7 @@ function updateContextProvider(current: Fiber, workInProgress: Fiber, renderLane
 function propagateContextChange(workInProgress: Fiber, context: ReactContext, renderLanes: Lanes) {
 	propagateContextChange_eager(workInProgress, context, renderLanes);
 }
+
 // 深度遍历当前fiber的所有子fiber，找到有使用Context的地方
 function propagateContextChange_eager(
 	workInProgress: Fiber,
@@ -323,7 +325,32 @@ function propagateContextChange_eager(
 ) {
 	// parent -> children -> null -> children.sibling -> children.return -> children.sibling
 
+	function checkFiberSibling(fiber: Fiber) {
+		if (fiber.sibling) {
+			fiber.sibling.return = fiber.return;
+			fiber = fiber.sibling;
+		} else {
+			while (!fiber.sibling) {
+				fiber = fiber.return!;
+				if (fiber === workInProgress) {
+					return fiber;
+				}
+			}
+
+			if (fiber === workInProgress) {
+				return fiber;
+			}
+
+			fiber.sibling!.return = fiber.return;
+			fiber = fiber.sibling;
+		}
+		return fiber;
+	}
+
 	let fiber = workInProgress.child;
+	if (fiber) {
+		fiber.return = workInProgress;
+	}
 	while (fiber) {
 		let list = fiber.dependencies;
 		if (list !== null) {
@@ -352,20 +379,9 @@ function propagateContextChange_eager(
 				// 同一个Context，由最近一个Context提供value
 
 				// 尝试sibling是否可以
-				if (fiber.sibling) {
-					fiber.sibling.return = fiber.return;
-					fiber = fiber.sibling;
-				} else {
-					while (!fiber.sibling) {
-						fiber = fiber.return!;
-					}
-
-					if (fiber === workInProgress) {
-						break;
-					}
-
-					fiber.sibling.return = fiber.return;
-					fiber = fiber.sibling;
+				fiber = checkFiberSibling(fiber);
+				if (fiber === workInProgress) {
+					break;
 				}
 				continue;
 			}
@@ -375,22 +391,12 @@ function propagateContextChange_eager(
 			fiber.child.return = fiber;
 			fiber = fiber.child;
 		} else {
-			if (fiber.sibling) {
-				fiber.sibling.return = fiber.return;
-				fiber = fiber.sibling;
-			} else {
-				while (!fiber.sibling) {
-					fiber = fiber.return!;
-				}
-
-				if (fiber === workInProgress) {
-					break;
-				}
-
-				fiber.sibling.return = fiber.return;
-				fiber = fiber.sibling;
+			fiber = checkFiberSibling(fiber);
+			if (fiber === workInProgress) {
+				break;
 			}
 		}
 	}
 }
+
 export { beginWork };

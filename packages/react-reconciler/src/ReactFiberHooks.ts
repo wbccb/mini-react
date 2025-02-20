@@ -530,7 +530,7 @@ function useContext(context: ReactContext) {
 	return readContext(context);
 }
 
-let lastContextDependency: ReactContext;
+let lastContextDependency: ReactContext | null = null;
 function readContext(context: ReactContext) {
 	const value = context._currentValue;
 	if (lastContextDependency === context) {
