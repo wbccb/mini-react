@@ -1,12 +1,17 @@
-import { Fiber } from "./ReactInternalTypes";
+import { ContextDependency, Fiber } from "./ReactInternalTypes";
 import { Props } from "react-dom/client";
-import { Lane, Lanes, NoLanes } from "./ReactFiberLane";
+import { Lane, Lanes, NoLanes, removeLanes } from "./ReactFiberLane";
 import { scheduleUpdateOnFiber, State } from "./ReactFiberClassUpdateQueue";
 import { requestEventTime, requestUpdateLane } from "./ReactFiberWorkLoop";
 import {
 	enqueueConcurrentClassUpdate,
 	enqueueConcurrentHookUpdate,
 } from "./ReactFiberConcurrentUpdates";
+import { Flags, Passive, PassiveStatic, Update } from "./ReactFiberFlags";
+import { HookFlags, HookHasEffect, HookLayout, HookPassive } from "./ReactHookEffectTags";
+import objectIs from "shared/src/objectIs";
+import { markWorkInProgressReceivedUpdate } from "./ReactFiberBeginWork";
+import { ReactContext } from "shared";
 
 let renderLanes: Lanes = NoLanes;
 let currentlyRenderingFiber: Fiber | null = null;
@@ -58,6 +63,7 @@ function renderWithHooks(
 	currentlyRenderingFiber = workInProgress;
 
 	workInProgress.memoizedState = null;
+	workInProgress.updateQueue = null;
 	workInProgress.lanes = NoLanes;
 
 	// 切换到mountReducer/updateReducer
@@ -169,12 +175,11 @@ function updateReducer(reducer: Reducer, initialArg: any, init?: (initialArg: an
 		// currentHook!.baseQueue = baseQueue;
 		queue.pending = null;
 	}
-
+	let newState = currentHook!.baseState;
 	// 遍历baseQueue的所有节点，不断调用reducer(最新state, action)来获取最新值 => 不断更新hook.baseState
 	if (baseQueue !== null) {
 		// 旧的tree是currentHook对应的tree，我们需要利用旧的tree去计算出新的值，然后赋值到新的tree上
 		const first = baseQueue.next;
-		let newState = currentHook!.baseState;
 
 		let update = first;
 		do {
@@ -183,16 +188,20 @@ function updateReducer(reducer: Reducer, initialArg: any, init?: (initialArg: an
 
 			update = update!.next;
 		} while (update !== null && update !== first);
-
-		hook.memoizedState = newState;
-		// 如果有shouldSkipUpdate=true，则hook.baseState=null,如果为false，则hook.baseState=newState
-		hook.baseState = newState;
 	}
 
 	// 对于不需要更新的hook，baseQueue为空
 	if (baseQueue === null) {
 		queue.lanes = NoLanes;
 	}
+
+	if (!is(newState, hook.memoizedState)) {
+		markWorkInProgressReceivedUpdate();
+	}
+
+	hook.memoizedState = newState;
+	// 如果有shouldSkipUpdate=true，则hook.baseState=null,如果为false，则hook.baseState=newState
+	hook.baseState = newState;
 
 	// 	返回hook.memoizedState, dispatch
 	return [hook.memoizedState, queue.dispatch];
@@ -211,7 +220,7 @@ function updateWorkInProgressHook() {
 		workInProgressHook = workInProgressHook.next;
 		currentHook = currentHook!.next;
 	}
-	return workInProgressHook;
+	return workInProgressHook!;
 }
 
 function basicStateReducer(state: State, action: any) {
@@ -285,4 +294,276 @@ function useState(initialState: State) {
 	}
 }
 
-export { renderWithHooks, useReducer, useState };
+function bailoutHooks(current: Fiber, workInProgress: Fiber, lanes: Lanes) {
+	workInProgress.updateQueue = current.updateQueue;
+
+	workInProgress.flags &= ~(Passive | Update);
+	current.lanes = removeLanes(current.lanes, lanes);
+}
+
+type StoreConsistencyCheck<T> = {
+	value: T;
+	getSnapshot: () => T;
+};
+export type Effect = {
+	tag: HookFlags;
+	create: CreateFnType;
+	destroy: (() => void) | void | null;
+	deps: DepsType;
+	next: Effect | null;
+};
+export type FunctionComponentUpdateQueue = {
+	lastEffect: Effect | null;
+	stores: Array<StoreConsistencyCheck<any>> | null;
+};
+
+/**
+ * 构建循环单链表结构数据
+ */
+function pushEffect(
+	hookFlags: HookFlags,
+	create: CreateFnType,
+	destroy: (() => void) | void | null,
+	deps: DepsType | null,
+) {
+	const effect: Effect = {
+		tag: hookFlags,
+		create: create,
+		destroy: destroy,
+		deps: deps,
+		next: null,
+	};
+	let componentUpdateQueue: FunctionComponentUpdateQueue | null = currentlyRenderingFiber!
+		.updateQueue as any;
+
+	if (componentUpdateQueue === null) {
+		componentUpdateQueue = createFunctionComponentUpdateQueue();
+		currentlyRenderingFiber!.updateQueue = componentUpdateQueue as any;
+
+		effect.next = effect;
+		componentUpdateQueue.lastEffect = effect;
+	} else {
+		const lastEffect = componentUpdateQueue.lastEffect;
+		if (lastEffect === null) {
+			effect.next = effect;
+			componentUpdateQueue.lastEffect = effect;
+		} else {
+			const firstEffect: Effect = lastEffect.next!;
+			lastEffect.next = effect;
+			effect.next = firstEffect;
+
+			componentUpdateQueue.lastEffect = effect;
+		}
+	}
+	return effect;
+}
+
+function createFunctionComponentUpdateQueue(): FunctionComponentUpdateQueue {
+	return {
+		lastEffect: null,
+		stores: null,
+	};
+}
+
+function areHookInputsEqual(nextDeps: Array<any>, oldDeps: Array<any> | null) {
+	if (oldDeps === null) return false;
+
+	for (let i = 0; i < nextDeps.length && i < oldDeps.length; i++) {
+		if (objectIs(nextDeps[i], oldDeps[i])) {
+			continue;
+		}
+
+		return false;
+	}
+	return true;
+}
+
+function useEffectImpl(
+	fiberFlags: Flags,
+	hookFlags: HookFlags,
+	create: CreateFnType,
+	deps: DepsType,
+) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		// mount
+		const hook = mountWorkProgressHook();
+		const nextDeps = deps === undefined ? null : deps;
+		currentlyRenderingFiber!.flags |= fiberFlags;
+		hook.memoizedState = pushEffect(HookHasEffect | hookFlags, create, undefined, nextDeps);
+	} else {
+		const hook: Hook = updateWorkInProgressHook() as Hook;
+		const nextDeps = deps === undefined ? null : deps;
+		let destroy: (() => void) | void | null = null;
+		// 更新阶段，比较deps有没有变化
+
+		// currentHook是根据代码的执行顺序确定的，这就是为什么useXX()要写在FunctionComponent最外层的原因
+		// 比如useEffect() -> useLayoutEffect()
+		// 那么你下一次执行就是 currentHook = useEffect()，然后才是currentHook = useLayoutEffect()，而不会先复制current = useLayoutEffect()
+		// 因此当前currentHook就是目前的hook
+		if (currentHook !== null) {
+			const prevEffect: Effect = currentHook?.memoizedState;
+			destroy = prevEffect.destroy;
+			if (nextDeps !== null) {
+				const prevDeps = prevEffect.deps as Array<any>;
+				if (areHookInputsEqual(nextDeps, prevDeps)) {
+					// 没有变化，不用更新
+					// 重新调用pushEffect，传入hookFlags重置flags
+					hook.memoizedState = pushEffect(hookFlags, create, destroy, nextDeps);
+					return;
+				}
+			}
+		}
+
+		// 如果需要更新，则设置flags为fiberFlags，并且pushEffect增加HookHasEffect
+		currentlyRenderingFiber!.flags |= fiberFlags;
+		hook!.memoizedState = pushEffect(HookHasEffect | hookFlags, create, destroy, nextDeps);
+	}
+}
+
+function mountEffect(create: CreateFnType, deps: DepsType) {
+	return useEffectImpl(Passive | PassiveStatic, HookPassive, create, deps);
+}
+
+function updateEffect(create: CreateFnType, deps: DepsType) {
+	return useEffectImpl(Passive, HookPassive, create, deps);
+}
+
+type CreateFnType = () => (() => void) | void;
+type DepsType = Array<any> | void | null;
+
+function useEffect(create: CreateFnType, deps?: DepsType) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		return mountEffect(create, deps);
+	} else {
+		return updateEffect(create, deps);
+	}
+}
+
+function mountLayoutEffect(create: CreateFnType, deps: DepsType) {
+	return useEffectImpl(Update, HookLayout, create, deps);
+}
+
+function updateLayoutEffect(create: CreateFnType, deps: DepsType) {
+	return useEffectImpl(Update, HookLayout, create, deps);
+}
+
+function useLayoutEffect(create: CreateFnType, deps?: DepsType) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		return mountLayoutEffect(create, deps);
+	} else {
+		return updateLayoutEffect(create, deps);
+	}
+}
+
+function useMemo(create: CreateFnType, deps?: DepsType) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		const hook = mountWorkProgressHook();
+		const nextDeps = deps === undefined ? null : deps;
+		const nextValue = create();
+		hook.memoizedState = [nextValue, nextDeps];
+		return nextValue;
+	} else {
+		const hook = updateWorkInProgressHook();
+		const nextDeps = deps === undefined ? null : deps;
+
+		// 比对当前的deps是否发生了变化
+		const prevState = hook?.memoizedState;
+		if (prevState !== null && nextDeps !== null) {
+			const prevDeps = prevState[1];
+			if (areHookInputsEqual(nextDeps, prevDeps)) {
+				return prevDeps[0];
+			}
+		}
+
+		// 如果deps已经变化，则重新计算memo，并且更新memoziedState
+		const nextValue = create();
+		hook.memoizedState = [nextValue, nextDeps];
+		return nextValue;
+	}
+}
+
+function useCallback(callback: CreateFnType, deps?: DepsType) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		const hook = mountWorkProgressHook();
+		const nextDeps = deps === undefined ? null : deps;
+		hook.memoizedState = [callback, nextDeps];
+		return callback;
+	} else {
+		const hook = updateWorkInProgressHook();
+		const nextDeps = deps === undefined ? null : deps;
+		const prevState = hook.memoizedState;
+		if (prevState !== null) {
+			const prevDeps = prevState[1];
+			if (prevDeps !== null && nextDeps !== null) {
+				if (areHookInputsEqual(nextDeps, prevDeps)) {
+					return prevState[0];
+				}
+			}
+		}
+
+		hook.memoizedState = [callback, nextDeps];
+		return callback;
+	}
+}
+
+function useRef(initialValue: any) {
+	const current = currentlyRenderingFiber?.alternate;
+	if (!current || current.memoizedState === null) {
+		const hook = mountWorkProgressHook();
+		const ref = {
+			current: initialValue,
+		};
+		hook.memoizedState = ref;
+		return ref;
+	} else {
+		const hook = updateWorkInProgressHook();
+		return hook.memoizedState;
+	}
+}
+
+function useContext(context: ReactContext) {
+	return readContext(context);
+}
+
+let lastContextDependency: ReactContext;
+function readContext(context: ReactContext) {
+	const value = context._currentValue;
+	if (lastContextDependency === context) {
+		// 同一个fiber使用同一个useContext(FirstContext)只添加一次依赖即可
+	} else {
+		const contextItem: ContextDependency = {
+			context: context,
+			memoizedValue: value,
+			next: null,
+		};
+		if (lastContextDependency === null) {
+			lastContextDependency = context;
+			currentlyRenderingFiber!.dependencies = {
+				lanes: NoLanes,
+				firstContext: contextItem,
+			};
+		} else {
+			lastContextDependency.next = contextItem;
+			lastContextDependency = lastContextDependency;
+		}
+	}
+	return value;
+}
+
+export {
+	renderWithHooks,
+	useReducer,
+	useState,
+	bailoutHooks,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useCallback,
+	useRef,
+	useContext,
+};

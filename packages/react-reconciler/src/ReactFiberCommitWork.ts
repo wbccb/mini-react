@@ -2,10 +2,13 @@ import { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { Lanes } from "./ReactFiberLane";
 import {
 	BeforeMutationMask,
+	ChildDeletion,
 	Hydrating,
 	LayoutMask,
 	MutationMask,
 	NoFlags,
+	Passive,
+	PassiveMask,
 	Placement,
 	Ref,
 	Snapshot,
@@ -27,6 +30,8 @@ import {
 } from "react-dom/src/client/ReactDOMHostConfig";
 import { FiberNode } from "./ReactFiber";
 import { updateDOMProperties } from "react-dom/src/client/ReactDOMComponent";
+import { HookFlags, HookHasEffect, HookLayout, HookPassive } from "./ReactHookEffectTags";
+import { FunctionComponentUpdateQueue } from "./ReactFiberHooks";
 
 let nextEffect: Fiber | null = null;
 
@@ -57,6 +62,7 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 			recursivelyTraverseMutationEffects(root, finishedWork);
 			commitReconciliationEffects(finishedWork);
 			if (flags & Update) {
+				// TODO 待完善useEffect和useLayoutEffect的相关逻辑
 			}
 			return;
 		case HostComponent:
@@ -78,6 +84,16 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 				}
 			}
 			return;
+		case HostText: {
+			recursivelyTraverseMutationEffects(root, finishedWork);
+			commitReconciliationEffects(finishedWork);
+			if (flags & Update) {
+				const textInstance = finishedWork.stateNode;
+				const newText = finishedWork.memoizedProps;
+				textInstance.nodeValue = newText;
+			}
+			return;
+		}
 		default: {
 			recursivelyTraverseMutationEffects(root, finishedWork);
 			commitReconciliationEffects(finishedWork);
@@ -93,6 +109,27 @@ function commitLayoutEffectOnFiber(
 	committedLanes: Lanes,
 ) {
 	// LayoutEffects真正执行地方
+	if ((finishedWork.flags & LayoutMask) !== NoFlags) {
+		switch (finishedWork.tag) {
+			case FunctionComponent:
+				commitHookEffectListMount(HookLayout | HookHasEffect, finishedWork);
+				break;
+			case ClassComponent: {
+				throw new Error("LayoutEffects没处理ClassComponent");
+				break;
+			}
+			case HostRoot: {
+				throw new Error("LayoutEffects没处理HostRoot");
+				break;
+			}
+			case HostComponent:
+			case HostText:
+				break;
+			default:
+				throw new Error("LayoutEffects没处理default");
+				break;
+		}
+	}
 }
 
 function recursivelyTraverseMutationEffects(root: FiberRoot, parentFiber: Fiber) {
@@ -435,4 +472,183 @@ function commitLayoutMountEffects_complete(
 	}
 }
 
-export { commitBeforeMutationEffects, commitLayoutEffects, commitMutationEffects };
+function commitPassiveUnmountEffects(firstChild: Fiber) {
+	nextEffect = firstChild;
+	// 深度遍历先执行当前fiber的commitHookEffectListUnmount(HookPassive)
+	// 然后从children->parent执行fiber的commitHookEffectListUnmount(HookPassive | HookHasEffect)
+	commitPassiveUnmountEffects_begin();
+}
+
+function commitPassiveUnmountEffects_begin() {
+	while (nextEffect !== null) {
+		let fiber = nextEffect;
+		let child = fiber.child;
+
+		// 要被删除的fiber的effect.destroy()的执行
+		if ((nextEffect.flags & ChildDeletion) !== NoFlags) {
+			const deletions = nextEffect.deletions;
+			if (deletions !== null) {
+				for (let i = 0; i < deletions.length; i++) {
+					const deleteFiber = deletions[i];
+					nextEffect = deleteFiber;
+					commitPassiveUnmountEffectsInsideOfDeletedTree_begin(deleteFiber, fiber);
+				}
+				nextEffect = fiber;
+			}
+		}
+
+		if ((fiber.subtreeFlags & PassiveMask) !== NoFlags && child !== null) {
+			child.return = fiber;
+			nextEffect = child;
+		} else {
+			// 深度遍历：先执行最底层的fiber-清除上一个effect所触发的effect.destroy()
+			commitPassiveUnmountEffects_complete();
+		}
+	}
+}
+function commitPassiveUnmountEffects_complete() {
+	// 先执行child
+	// 然后检测child.sibling是否为空，不为空则继续出发commitPassiveUnmountEffects_begin()
+	while (nextEffect !== null) {
+		const fiber = nextEffect;
+		if ((fiber.flags & Passive) !== NoFlags) {
+			switch (fiber.tag) {
+				case FunctionComponent:
+					commitHookEffectListUnmount(HookPassive | HookHasEffect, fiber, fiber.return!);
+					break;
+			}
+		}
+
+		const sibling = fiber.sibling;
+		if (sibling !== null) {
+			nextEffect = sibling;
+			return; // 继续执行commitPassiveUnmountEffects_begin
+		}
+
+		nextEffect = fiber.return;
+	}
+}
+
+function commitPassiveUnmountEffectsInsideOfDeletedTree_begin(
+	deleteFiber: Fiber,
+	parentFiber: Fiber,
+) {
+	while (nextEffect !== null) {
+		// 先处理当前fiber
+		var fiber = nextEffect;
+		switch (fiber.tag) {
+			case FunctionComponent:
+				commitHookEffectListUnmount(HookPassive, deleteFiber, parentFiber);
+				break;
+		}
+		// 深度遍历
+		const child = fiber.child;
+		if (child !== null) {
+			child.return = fiber;
+			nextEffect = child;
+		} else {
+			commitPassiveUnmountEffectsInsideOfDeletedTree_complete(deleteFiber);
+		}
+	}
+}
+
+function commitPassiveUnmountEffectsInsideOfDeletedTree_complete(deleteFiber: Fiber) {
+	// TODO 进行fiber数据的清空...我觉得没啥用，暂时先不完善
+}
+
+function commitPassiveMountEffects(root: FiberRoot, finishedWork: Fiber, committedLanes: Lanes) {
+	nextEffect = finishedWork;
+	commitPassiveMountEffects_begin(finishedWork, root, committedLanes);
+}
+
+function commitPassiveMountEffects_begin(
+	subtreeRoot: Fiber,
+	root: FiberRoot,
+	committedLanes: Lanes,
+) {
+	while (nextEffect !== null) {
+		const fiber = nextEffect;
+		const firstChild = fiber.child;
+		if ((fiber.subtreeFlags & PassiveMask) !== NoFlags && firstChild !== null) {
+			firstChild.return = fiber;
+			nextEffect = firstChild;
+		} else {
+			commitPassiveMountEffects_complete(subtreeRoot, root, committedLanes);
+		}
+	}
+}
+function commitPassiveMountEffects_complete(
+	subtreeRoot: Fiber,
+	root: FiberRoot,
+	committedLanes: Lanes,
+) {
+	while (nextEffect !== null) {
+		const fiber = nextEffect;
+		if (fiber === subtreeRoot) {
+			nextEffect = null;
+			return;
+		}
+
+		// 深度遍历执行，从最底部节点开始向上parent执行，如果遇到sibling不是最底部，则继续向下遍历拿到最底部节点，然后再从最底部节点向上parent执行
+		if ((fiber.flags & Passive) !== NoFlags) {
+			switch (fiber.tag) {
+				case FunctionComponent:
+					commitHookEffectListMount(HookPassive | HookHasEffect, fiber);
+					break;
+			}
+		}
+
+		const sibling = fiber.sibling;
+		if (sibling !== null) {
+			sibling.return = fiber.return;
+			nextEffect = sibling;
+			return;
+		}
+
+		nextEffect = fiber.return;
+	}
+}
+// 执行useEffect的destroy()方法
+function commitHookEffectListUnmount(flags: HookFlags, fiber: Fiber, parentFiber: Fiber) {
+	const updateQueue: FunctionComponentUpdateQueue = fiber.updateQueue as any;
+	const lastEffect = updateQueue.lastEffect;
+	if (lastEffect !== null) {
+		const firstEffect = lastEffect.next!;
+		let currentEffect = firstEffect;
+		do {
+			if ((currentEffect.tag & flags) !== NoFlags) {
+				let destroy = currentEffect.destroy;
+				currentEffect.destroy = null;
+				if (destroy) {
+					destroy();
+				}
+			}
+			currentEffect = currentEffect.next!;
+		} while (currentEffect !== firstEffect);
+	}
+}
+
+// 执行useEffect的create()方法
+function commitHookEffectListMount(flags: HookFlags, fiber: Fiber) {
+	const updateQueue: FunctionComponentUpdateQueue = fiber.updateQueue as any;
+	const lastEffect = updateQueue.lastEffect;
+	if (lastEffect !== null) {
+		const firstEffect = lastEffect.next!;
+		let currentEffect = firstEffect;
+		do {
+			if ((currentEffect.tag & flags) === flags) {
+				const create = currentEffect.create;
+				currentEffect.destroy = create();
+			}
+			currentEffect = currentEffect.next!;
+		} while (currentEffect !== firstEffect);
+	}
+}
+
+export {
+	commitBeforeMutationEffects,
+	commitLayoutEffects,
+	commitMutationEffects,
+	commitPassiveUnmountEffects,
+	commitPassiveMountEffects,
+};

@@ -1,7 +1,8 @@
 import { Fiber } from "./ReactInternalTypes";
-import { Lanes, NoLanes } from "./ReactFiberLane";
+import { Lanes, mergeLanes, NoLanes } from "./ReactFiberLane";
 import {
 	ClassComponent,
+	ContextProvider,
 	Fragment,
 	FunctionComponent,
 	HostComponent,
@@ -12,13 +13,17 @@ import {
 import { RootState } from "./ReactFiberRoot";
 import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
 import { PerformedWork } from "./ReactFiberFlags";
-import { renderWithHooks } from "./ReactFiberHooks";
+import { bailoutHooks, renderWithHooks } from "./ReactFiberHooks";
 import {
 	adoptClassInstance,
 	constructClassInstance,
 	mountClassInstance,
 } from "./ReactFiberClassComponent";
 import { processUpdateQueue } from "./ReactFiberClassUpdateQueue";
+import { ReactContext } from "shared";
+import objectIs from "shared/src/objectIs";
+import { prepareToReadContext } from "./ReactFiberNewContext";
+import { scheduleContextWorkOnParentPath } from "react";
 
 function markRef(current: Fiber | null, workInProgress: Fiber) {
 	// TOOD 涉及到Ref相关内容在实现
@@ -28,6 +33,7 @@ function markRef(current: Fiber | null, workInProgress: Fiber) {
  * 1. 对当前workInProgress进行beginWork()处理（reconcileChildren子节点，返回第一个子节点）
  * 2. 返回workInProgress.child子节点
  */
+let didReceiveUpdate = false;
 function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: Lanes): Fiber | null {
 	// 记住：当前fiber是已经创建好的，一开始是HostRoot（初始化就创建好的fiber)->reconcileChildren()创建fiber.child
 	// completeOfWork()切换当前fiber从HostRoot->上面创建的HostRoot.child作为当前fiber，然后继续reconcileChildren()创建当前fiber.child
@@ -35,6 +41,18 @@ function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: La
 
 	// 根据已经创建好的fiber，比对children，进行Flags的标记：能复用的打上Update标签，需要新增或者插入的打上Placement标签，需要调用生命周期的打上Snapshot
 	// 返回当前fiber的第一个child fiber
+	if (current !== null) {
+		const oldProps = current.memoizedProps;
+		const newProps = workInProgress.pendingProps;
+
+		if (oldProps !== newProps) {
+			didReceiveUpdate = true;
+		} else {
+			didReceiveUpdate = false;
+		}
+	} else {
+		didReceiveUpdate = false;
+	}
 
 	workInProgress.lanes = NoLanes;
 	switch (workInProgress.tag) {
@@ -63,6 +81,8 @@ function beginWork(current: Fiber | null, workInProgress: Fiber, renderLanes: La
 			const _Component = workInProgress.type;
 			const props = workInProgress.pendingProps;
 			return updateClassComponent(current, workInProgress, _Component, props, renderLanes);
+		case ContextProvider:
+			return updateContextProvider(current, workInProgress, renderLanes);
 	}
 
 	// 至于当前fiber的children的fiber构建，会在completeUnitOfWork()迭代方法中触发
@@ -150,6 +170,8 @@ function mountIndeterminateComponent(
 	Component: any, // workInProgress.type
 	renderLanes: Lanes,
 ): Fiber | null {
+	prepareToReadContext(workInProgress, renderLanes);
+
 	const props = workInProgress.pendingProps; // 在createFiberFromElement()中获取fiber.props赋值给pendingProps，其中fiber.props是jsx自动解析获取的props数据
 	const value: any = renderWithHooks(null, workInProgress, Component, props, renderLanes);
 
@@ -171,6 +193,10 @@ function mountIndeterminateComponent(
 	}
 }
 
+export function markWorkInProgressReceivedUpdate() {
+	didReceiveUpdate = true;
+}
+
 function updateFunctionComponent(
 	current: Fiber | null,
 	workInProgress: Fiber,
@@ -178,6 +204,7 @@ function updateFunctionComponent(
 	nextProps: any,
 	renderLanes: Lanes,
 ) {
+	prepareToReadContext(workInProgress, renderLanes);
 	const nextChildren: any = renderWithHooks(
 		current,
 		workInProgress,
@@ -185,10 +212,22 @@ function updateFunctionComponent(
 		nextProps,
 		renderLanes,
 	);
+
+	if (current !== null && !didReceiveUpdate) {
+		bailoutHooks(current, workInProgress, renderLanes);
+		return bailoutOnAlreadyFinishedWork();
+	}
+
 	workInProgress.flags |= PerformedWork;
 	// 省略bailoutOnAlreadyFinishedWork逻辑
 	reconcileChildren(current, workInProgress, nextChildren, renderLanes);
 	return workInProgress.child;
+}
+
+function bailoutOnAlreadyFinishedWork() {
+	// 如果有更新的，则复制fiber
+	// 如果fiber.lanes没有需要更新，直接返回null
+	return null;
 }
 
 function updateClassComponent(
@@ -198,6 +237,7 @@ function updateClassComponent(
 	nextProps: any,
 	renderLanes: Lanes,
 ) {
+	prepareToReadContext(workInProgress, renderLanes);
 	const instance = workInProgress.stateNode;
 	let shouldUpdate;
 
@@ -234,4 +274,123 @@ function finishClassComponent(
 	return workInProgress.child;
 }
 
+function updateContextProvider(current: Fiber, workInProgress: Fiber, renderLanes: Lanes) {
+	// jsx转化为：
+	// {
+	// 	$$typeof: Symbol(react.element),
+	// 		type: Context.Provider, // 关键属性
+	//  	props: { value, children },
+	// }
+
+	// Context.Provider = {
+	//   $$typeof: REACT_PROVIDER_TYPE,
+	//   _context: context,
+	// };
+
+	const providerType = workInProgress.type;
+	const context = providerType._context;
+	const newProps = workInProgress.pendingProps;
+	const newValue = newProps.value; // <Context.Provider value={}/>
+	const oldProps = workInProgress.memoizedProps;
+
+	pushProvider(workInProgress, context, newValue);
+
+	if (oldProps !== null) {
+		const oldValue = oldProps.value;
+		if (objectIs(oldValue, newValue)) {
+			if (oldProps.children === newProps.children) {
+				return bailoutOnAlreadyFinishedWork();
+			}
+		} else {
+			// 值改变了，需要动态通知childrenFiber，也就是遍历所有childFiber，然后给他们打上fiber.lanes = XXX以及创建对应的update放入到fiber.updateQueue中
+			propagateContextChange(workInProgress, context, renderLanes);
+		}
+	}
+
+	const newChildren = newProps.children;
+	reconcileChildren(current, workInProgress, newChildren, renderLanes);
+	return workInProgress.child;
+}
+
+function propagateContextChange(workInProgress: Fiber, context: ReactContext, renderLanes: Lanes) {
+	propagateContextChange_eager(workInProgress, context, renderLanes);
+}
+// 深度遍历当前fiber的所有子fiber，找到有使用Context的地方
+function propagateContextChange_eager(
+	workInProgress: Fiber,
+	context: ReactContext,
+	renderLanes: Lanes,
+) {
+	// parent -> children -> null -> children.sibling -> children.return -> children.sibling
+
+	let fiber = workInProgress.child;
+	while (fiber) {
+		let list = fiber.dependencies;
+		if (list !== null) {
+			let dependency = list.firstContext;
+			while (dependency) {
+				if (dependency.context === context) {
+					// 说明fiber可以标记了，不需要继续遍历该fiber剩余的useContext
+
+					// TODO ClassComponent??
+
+					fiber.lanes = mergeLanes(fiber.lanes, renderLanes);
+					const alternate = fiber.alternate;
+					if (alternate !== null) {
+						alternate.lanes = mergeLanes(alternate.lanes, renderLanes);
+					}
+
+					scheduleContextWorkOnParentPath(fiber.return, renderLanes, workInProgress);
+
+					break;
+				}
+
+				dependency = dependency.next;
+			}
+		} else if (fiber.tag === ContextProvider) {
+			if (fiber.type === workInProgress.type) {
+				// 同一个Context，由最近一个Context提供value
+
+				// 尝试sibling是否可以
+				if (fiber.sibling) {
+					fiber.sibling.return = fiber.return;
+					fiber = fiber.sibling;
+				} else {
+					while (!fiber.sibling) {
+						fiber = fiber.return!;
+					}
+
+					if (fiber === workInProgress) {
+						break;
+					}
+
+					fiber.sibling.return = fiber.return;
+					fiber = fiber.sibling;
+				}
+				continue;
+			}
+		}
+
+		if (fiber.child) {
+			fiber.child.return = fiber;
+			fiber = fiber.child;
+		} else {
+			if (fiber.sibling) {
+				fiber.sibling.return = fiber.return;
+				fiber = fiber.sibling;
+			} else {
+				while (!fiber.sibling) {
+					fiber = fiber.return!;
+				}
+
+				if (fiber === workInProgress) {
+					break;
+				}
+
+				fiber.sibling.return = fiber.return;
+				fiber = fiber.sibling;
+			}
+		}
+	}
+}
 export { beginWork };

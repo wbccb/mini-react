@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "shared": "workspace:*",
-    "react-dom": "workspace:*"
+    "react-dom": "workspace:*",
+    "react": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.2.2",

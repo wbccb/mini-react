@@ -2,6 +2,7 @@ import { Fiber } from "./ReactInternalTypes";
 import { Lanes, mergeLanes, NoLane, NoLanes } from "./ReactFiberLane";
 import {
 	ClassComponent,
+	ContextProvider,
 	Fragment,
 	FunctionComponent,
 	HostComponent,
@@ -61,6 +62,11 @@ function completeWork(
 			bubbleProperties(workInProgress);
 			return null;
 		}
+		case ContextProvider:
+			const context = workInProgress.type._context;
+			popProvider(context);
+			bubbleProperties(workInProgress);
+			return null;
 	}
 
 	throw new Error(
@@ -143,11 +149,7 @@ function bubbleProperties(workInProgress: Fiber) {
 		}
 		workInProgress.subtreeFlags |= subtreeFlags;
 		workInProgress.childLanes = newChildLanes;
-		// console.error(
-		// 	"bubbleProperties!!改变",
-		// 	workInProgress,
-		// 	(subtreeFlags & ChildDeletion) !== NoFlags,
-		// );
+		console.error("bubbleProperties!!改变", workInProgress);
 	} else {
 		// 没有改变
 		console.error("bubbleProperties 没有改变", workInProgress);

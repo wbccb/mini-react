@@ -93,6 +93,9 @@ importers:
       react-reconciler:
         specifier: workspace:*
         version: link:../react-reconciler
+      shared:
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       '@types/react':
         specifier: 18.3.1
@@ -128,6 +131,9 @@ importers:
 
   packages/react-reconciler:
     dependencies:
+      react:
+        specifier: workspace:*
+        version: link:../react
       react-dom:
         specifier: workspace:*
         version: link:../react-dom

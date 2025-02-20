@@ -28,6 +28,7 @@ import {
 	UserBlockingPriority as UserBlockingSchedulerPriority,
 	NormalPriority as NormalSchedulerPriority,
 	IdlePriority as IdleSchedulerPriority,
+	NormalPriority,
 } from "shared";
 import { getCurrentEventPriority } from "react-dom/client";
 import { scheduleCallback, cancelCallback, IdlePriority, UserBlockingPriority } from "shared";
@@ -47,7 +48,10 @@ import {
 	commitBeforeMutationEffects,
 	commitLayoutEffects,
 	commitMutationEffects,
+	commitPassiveMountEffects,
+	commitPassiveUnmountEffects,
 } from "./ReactFiberCommitWork";
+import { FiberRootNode } from "./ReactFiberRoot";
 type ExecutionContext = number;
 
 const NoTimestamp = -1;
@@ -340,6 +344,10 @@ function finishConcurrentRender(root: FiberRoot, exitStatus: RootExitStatus, lan
 function commitRoot(root: FiberRoot) {
 	commitRootImpl(root);
 }
+
+let rootDoesHavePassiveEffects = false;
+let rootWithPendingPassiveEffects: FiberRootNode | null = null;
+let pendingPassiveEffectsLanes = NoLanes;
 function commitRootImpl(root: FiberRoot) {
 	const finishedWork: Fiber = root.finishedWork!; // root.current.alternate就是finishedWork
 	const lanes = root.finishedLanes;
@@ -352,6 +360,20 @@ function commitRootImpl(root: FiberRoot) {
 
 	// root.pendingLanes置为0，防止重复渲染，在ensureRootIsScheduled()会阻止
 	markRootFinished(root, remainingLanes);
+
+	if (
+		(finishedWork.subtreeFlags & PassiveMask) !== NoFlags ||
+		(finishedWork.flags & PassiveMask) !== NoFlags
+	) {
+		if (!rootDoesHavePassiveEffects) {
+			// rootDoesHavePassiveEffects控制不要重复触发
+			rootDoesHavePassiveEffects = true;
+			scheduleCallback(NormalPriority, function () {
+				flushPassiveEffects();
+				return null;
+			});
+		}
+	}
 
 	// 1. 判断是否需要有flags需要执行
 	const subtreeHasEffects =
@@ -378,11 +400,28 @@ function commitRootImpl(root: FiberRoot) {
 		executionContext = prevExecutionContext;
 	}
 
+	if (rootDoesHavePassiveEffects) {
+		rootDoesHavePassiveEffects = false;
+		rootWithPendingPassiveEffects = root;
+		pendingPassiveEffectsLanes = lanes;
+	}
+
 	ensureRootIsScheduled(root, now());
 	// TODO 后续完善
 	// flushSyncCallbacks()
 
 	return null;
+}
+
+export function flushPassiveEffects(): boolean {
+	return flushPassiveEffectsImpl();
+}
+function flushPassiveEffectsImpl() {
+	const root: FiberRootNode = rootWithPendingPassiveEffects!;
+	const lane = pendingPassiveEffectsLanes;
+	commitPassiveUnmountEffects(root.current!);
+	commitPassiveMountEffects(root, root.current!, lane);
+	return true;
 }
 
 function isRenderConsistentWithExternalStores(finishedWork: Fiber): boolean {

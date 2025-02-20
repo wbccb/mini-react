@@ -1,6 +1,7 @@
 import { ConcurrentRoot, RootTag } from "./ReactRootTags";
 import {
 	ClassComponent,
+	ContextProvider,
 	Fragment,
 	HostComponent,
 	HostRoot,
@@ -12,8 +13,8 @@ import { State, FiberClassUpdateQueue } from "./ReactFiberClassUpdateQueue";
 import { ConcurrentMode, NoMode, TypeOfMode } from "./ReactTypeOfMode";
 import { Lanes, NoLanes } from "./ReactFiberLane";
 import { Flags, NoFlags, StaticMask } from "./ReactFiberFlags";
-import { REACT_FRAGMENT_TYPE, ReactElement } from "shared";
-import { Fiber } from "./ReactInternalTypes";
+import { REACT_FRAGMENT_TYPE, REACT_PROVIDER_TYPE, ReactElement } from "shared";
+import { Dependencies, Fiber } from "./ReactInternalTypes";
 
 export function createHostRootFiber(tag: RootTag) {
 	let mode;
@@ -77,6 +78,17 @@ function createFiberFromTypeAndProps(
 		fiberTag = HostComponent;
 	} else if (type === REACT_FRAGMENT_TYPE) {
 		fiberTag = Fragment;
+	} else {
+		switch (type) {
+			default:
+				if (typeof type === "object" && type !== null) {
+					switch (type.$$typeof) {
+						case REACT_PROVIDER_TYPE:
+							fiberTag = ContextProvider;
+							break;
+					}
+				}
+		}
 	}
 	// TODO 还有很多fiberTag没识别，后续在识别
 
@@ -116,6 +128,8 @@ class FiberNode {
 	memoizedProps: any; // 上一次使用的旧的props
 	pendingProps: any; // 新的props
 
+	dependencies: Dependencies | null;
+
 	index: number;
 
 	$$typeof?: Symbol;
@@ -151,6 +165,8 @@ class FiberNode {
 		this.pendingProps = pendingProps;
 
 		this.index = 0;
+
+		this.dependencies = null;
 	}
 }
 
