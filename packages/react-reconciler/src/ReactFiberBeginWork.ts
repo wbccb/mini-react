@@ -1,5 +1,5 @@
 import { Fiber } from "./ReactInternalTypes";
-import { Lanes, NoLanes } from "./ReactFiberLane";
+import { Lanes, mergeLanes, NoLanes } from "./ReactFiberLane";
 import {
 	ClassComponent,
 	ContextProvider,
@@ -23,6 +23,7 @@ import { processUpdateQueue } from "./ReactFiberClassUpdateQueue";
 import { ReactContext } from "shared";
 import objectIs from "shared/src/objectIs";
 import { prepareToReadContext } from "./ReactFiberNewContext";
+import { scheduleContextWorkOnParentPath } from "react";
 
 function markRef(current: Fiber | null, workInProgress: Fiber) {
 	// TOOD 涉及到Ref相关内容在实现
@@ -311,4 +312,85 @@ function updateContextProvider(current: Fiber, workInProgress: Fiber, renderLane
 	return workInProgress.child;
 }
 
+function propagateContextChange(workInProgress: Fiber, context: ReactContext, renderLanes: Lanes) {
+	propagateContextChange_eager(workInProgress, context, renderLanes);
+}
+// 深度遍历当前fiber的所有子fiber，找到有使用Context的地方
+function propagateContextChange_eager(
+	workInProgress: Fiber,
+	context: ReactContext,
+	renderLanes: Lanes,
+) {
+	// parent -> children -> null -> children.sibling -> children.return -> children.sibling
+
+	let fiber = workInProgress.child;
+	while (fiber) {
+		let list = fiber.dependencies;
+		if (list !== null) {
+			let dependency = list.firstContext;
+			while (dependency) {
+				if (dependency.context === context) {
+					// 说明fiber可以标记了，不需要继续遍历该fiber剩余的useContext
+
+					// TODO ClassComponent??
+
+					fiber.lanes = mergeLanes(fiber.lanes, renderLanes);
+					const alternate = fiber.alternate;
+					if (alternate !== null) {
+						alternate.lanes = mergeLanes(alternate.lanes, renderLanes);
+					}
+
+					scheduleContextWorkOnParentPath(fiber.return, renderLanes, workInProgress);
+
+					break;
+				}
+
+				dependency = dependency.next;
+			}
+		} else if (fiber.tag === ContextProvider) {
+			if (fiber.type === workInProgress.type) {
+				// 同一个Context，由最近一个Context提供value
+
+				// 尝试sibling是否可以
+				if (fiber.sibling) {
+					fiber.sibling.return = fiber.return;
+					fiber = fiber.sibling;
+				} else {
+					while (!fiber.sibling) {
+						fiber = fiber.return!;
+					}
+
+					if (fiber === workInProgress) {
+						break;
+					}
+
+					fiber.sibling.return = fiber.return;
+					fiber = fiber.sibling;
+				}
+				continue;
+			}
+		}
+
+		if (fiber.child) {
+			fiber.child.return = fiber;
+			fiber = fiber.child;
+		} else {
+			if (fiber.sibling) {
+				fiber.sibling.return = fiber.return;
+				fiber = fiber.sibling;
+			} else {
+				while (!fiber.sibling) {
+					fiber = fiber.return!;
+				}
+
+				if (fiber === workInProgress) {
+					break;
+				}
+
+				fiber.sibling.return = fiber.return;
+				fiber = fiber.sibling;
+			}
+		}
+	}
+}
 export { beginWork };

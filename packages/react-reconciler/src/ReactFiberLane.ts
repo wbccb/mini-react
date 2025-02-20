@@ -68,6 +68,10 @@ export function includesSomeLane(a: Lanes | Lane, b: Lanes | Lane) {
 	return (a & b) !== NoLanes;
 }
 
+export function isSubsetOfLanes(set: Lanes, subset: Lanes | Lane) {
+	return (set & subset) === subset;
+}
+
 export function mergeLanes(a: Lanes | Lane, b: Lanes | Lane) {
 	return a | b;
 }

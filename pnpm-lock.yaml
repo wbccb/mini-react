@@ -131,6 +131,9 @@ importers:
 
   packages/react-reconciler:
     dependencies:
+      react:
+        specifier: workspace:*
+        version: link:../react
       react-dom:
         specifier: workspace:*
         version: link:../react-dom

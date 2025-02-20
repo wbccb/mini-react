@@ -138,4 +138,8 @@ function getRootForUpdatedFiber(sourceFiber: Fiber): FiberRoot | null {
 	return node.tag === HostRoot ? node.stateNode : null;
 }
 
-export { enqueueConcurrentClassUpdate, finishQueueingConcurrentUpdates };
+export {
+	enqueueConcurrentClassUpdate,
+	finishQueueingConcurrentUpdates,
+	markUpdateLaneFromFiberToRoot,
+};
