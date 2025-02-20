@@ -6,6 +6,7 @@ import { TestUseEffectAndUseLayoutEffect } from "./hooks/useEffect&useLayoutEffe
 import { TestUseMemo } from "./hooks/useMemo&useCallback&useRef";
 import { DiffDelete_insert } from "./diff/diff-delete_insert";
 import { DiffMulti } from "./diff/diff-multi";
+import TestUseContext from "./hooks/useContext";
 const domNode = document.getElementById("root") as HTMLElement;
 const root = createRoot(domNode);
 // ----------------------测试多种数据初始化逻辑----------------------
@@ -45,13 +46,23 @@ const root = createRoot(domNode);
 // root.render(rootData);
 // ======================测试diff======================
 
-// ======================测试useEffect======================
+// ======================测试常见hooks======================
+// const rootData = (
+// 	<div id="我是最外层的">
+// 		<TestUseEffectAndUseLayoutEffect />
+// 		<TestUseMemo />
+// 	</div>
+// );
+//
+// root.render(rootData);
+// ======================测试常见hooks======================
+
+// ======================测试useContext======================
 const rootData = (
 	<div id="我是最外层的">
-		{/*<TestUseEffectAndUseLayoutEffect />*/}
-		<TestUseMemo />
+		<TestUseContext />
 	</div>
 );
 
 root.render(rootData);
-// ======================测试useEffect======================
+// ======================测试useContext======================
