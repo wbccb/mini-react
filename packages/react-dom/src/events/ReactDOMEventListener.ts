@@ -8,6 +8,8 @@ import {
 import { DOMEventName } from "./DOMEventNames";
 import { EventSystemFlags } from "./EventSystemFlags";
 import { AnyNativeEvent } from "./PluginModuleType";
+import { dispatchEventForPluginEventSystem } from "./DOMPluginEventSystem";
+import { clearIfContinuousEvent } from "./ReactDOMEventReplaying";
 
 export function getEventPriority(domEventName: DOMEventName) {
 	switch (domEventName) {
@@ -169,7 +171,34 @@ export function dispatchEvent(
 	);
 }
 
+export let return_targetInst = null;
 function dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay(
+	domEventName: DOMEventName,
+	eventSystemFlags: EventSystemFlags,
+	targetContainer: EventTarget,
+	nativeEvent: AnyNativeEvent,
+) {
+	const blockedOn = findInstanceBlockingEvent(
+		domEventName,
+		eventSystemFlags,
+		targetContainer,
+		nativeEvent,
+	);
+
+	if (blockedOn === null) {
+		dispatchEventForPluginEventSystem(
+			domEventName,
+			eventSystemFlags,
+			nativeEvent,
+			return_targetInst,
+			targetContainer,
+		);
+		clearIfContinuousEvent(domEventName, nativeEvent);
+		return;
+	}
+}
+
+export function findInstanceBlockingEvent(
 	domEventName: DOMEventName,
 	eventSystemFlags: EventSystemFlags,
 	targetContainer: EventTarget,

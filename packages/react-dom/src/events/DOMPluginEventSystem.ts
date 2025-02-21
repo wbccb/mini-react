@@ -7,6 +7,7 @@ import { Fiber } from "react-reconciler";
 import { EventSystemFlags, IS_CAPTURE_PHASE } from "./EventSystemFlags";
 import { createEventListenerWrapperWithPriority } from "./ReactDOMEventListener";
 import { addEventBubbleListener, addEventCaptureListener } from "./EventListener";
+import { AnyNativeEvent } from "./PluginModuleType";
 
 type DispatchListener = {
 	instance: null | Fiber;
@@ -129,4 +130,12 @@ function listenToAllSupportedEvents(rootContainerElement: EventTarget) {
 	}
 }
 
-export { listenToAllSupportedEvents };
+function dispatchEventForPluginEventSystem(
+	domEventName: DOMEventName,
+	eventSystemFlags: EventSystemFlags,
+	nativeEvent: AnyNativeEvent,
+	targetInst: null | Fiber,
+	targetContainer: EventTarget,
+): void {}
+
+export { listenToAllSupportedEvents, dispatchEventForPluginEventSystem };
