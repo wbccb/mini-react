@@ -21,6 +21,11 @@ let currentUpdatePriority: EventPriority = NoLane;
 export function getCurrentUpdatePriority(): EventPriority {
 	return currentUpdatePriority;
 }
+
+export function setCurrentUpdatePriority(newPriority: EventPriority) {
+	currentUpdatePriority = newPriority;
+}
+
 export function isHigherEventPriority(a: EventPriority, b: EventPriority): boolean {
 	return a !== 0 && a < b;
 }

@@ -2,8 +2,12 @@ import {
 	ContinuousEventPriority,
 	DefaultEventPriority,
 	DiscreteEventPriority,
+	getCurrentUpdatePriority,
+	setCurrentUpdatePriority,
 } from "react-reconciler";
 import { DOMEventName } from "./DOMEventNames";
+import { EventSystemFlags } from "./EventSystemFlags";
+import { AnyNativeEvent } from "./PluginModuleType";
 
 export function getEventPriority(domEventName: DOMEventName) {
 	switch (domEventName) {
@@ -96,3 +100,78 @@ export function getEventPriority(domEventName: DOMEventName) {
 			return DefaultEventPriority;
 	}
 }
+
+export function createEventListenerWrapperWithPriority(
+	targetContainer: EventTarget,
+	domEventName: DOMEventName,
+	eventSystemFlags: EventSystemFlags,
+) {
+	let eventPriority = getEventPriority(domEventName);
+	var listenerWrapper;
+
+	switch (eventPriority) {
+		case DiscreteEventPriority:
+			listenerWrapper = dispatchDiscreteEvent;
+			break;
+
+		case ContinuousEventPriority:
+			listenerWrapper = dispatchContinuousEvent;
+			break;
+
+		case DefaultEventPriority:
+		default:
+			listenerWrapper = dispatchEvent;
+			break;
+	}
+
+	return listenerWrapper.bind(null, domEventName, eventSystemFlags, targetContainer);
+}
+
+function dispatchDiscreteEvent(
+	domEventName: DOMEventName,
+	eventSystemFlags: EventSystemFlags,
+	container: EventTarget,
+	nativeEvent: any,
+) {
+	var previousPriority = getCurrentUpdatePriority();
+	try {
+		setCurrentUpdatePriority(DiscreteEventPriority);
+		dispatchEvent(domEventName, eventSystemFlags, container, nativeEvent);
+	} finally {
+		setCurrentUpdatePriority(previousPriority);
+	}
+}
+function dispatchContinuousEvent(
+	domEventName: DOMEventName,
+	eventSystemFlags: EventSystemFlags,
+	container: EventTarget,
+	nativeEvent: AnyNativeEvent,
+) {
+	var previousPriority = getCurrentUpdatePriority();
+	try {
+		setCurrentUpdatePriority(ContinuousEventPriority);
+		dispatchEvent(domEventName, eventSystemFlags, container, nativeEvent);
+	} finally {
+		setCurrentUpdatePriority(previousPriority);
+	}
+}
+export function dispatchEvent(
+	domEventName: DOMEventName,
+	eventSystemFlags: EventSystemFlags,
+	targetContainer: EventTarget,
+	nativeEvent: AnyNativeEvent,
+): void {
+	dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay(
+		domEventName,
+		eventSystemFlags,
+		targetContainer,
+		nativeEvent,
+	);
+}
+
+function dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay(
+	domEventName: DOMEventName,
+	eventSystemFlags: EventSystemFlags,
+	targetContainer: EventTarget,
+	nativeEvent: AnyNativeEvent,
+) {}

@@ -5,6 +5,8 @@ import type { KnownReactSyntheticEvent, ReactSyntheticEvent } from "./ReactSynth
 import * as SimpleEventPlugin from "./plugins/SimpleEventPlugin";
 import { Fiber } from "react-reconciler";
 import { EventSystemFlags, IS_CAPTURE_PHASE } from "./EventSystemFlags";
+import { createEventListenerWrapperWithPriority } from "./ReactDOMEventListener";
+import { addEventBubbleListener, addEventCaptureListener } from "./EventListener";
 
 type DispatchListener = {
 	instance: null | Fiber;
@@ -76,7 +78,18 @@ function addTrappedEventListener(
 	eventSystemFlags: EventSystemFlags,
 	isCapturePhaseListener: boolean,
 	isDeferredListenerForLegacyFBSupport?: boolean,
-) {}
+) {
+	let listener = createEventListenerWrapperWithPriority(
+		targetContainer,
+		domEventName,
+		eventSystemFlags,
+	);
+	if (isCapturePhaseListener) {
+		addEventCaptureListener(targetContainer, domEventName, listener);
+	} else {
+		addEventBubbleListener(targetContainer, domEventName, listener);
+	}
+}
 
 /**
  * #root派发事件到对应的fiber
