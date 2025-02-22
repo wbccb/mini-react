@@ -18,6 +18,7 @@ import {
 import getEventCharCode from "../getEventCharCode";
 import { IS_CAPTURE_PHASE } from "../EventSystemFlags";
 import { HostComponent } from "react-reconciler/src/ReactWorkTags";
+import getListener from "../getListener";
 
 function extractEvents(
 	dispatchQueue: DispatchQueue,
@@ -130,7 +131,7 @@ function extractEvents(
 	const accumulateTargetOnly = !inCapturePhase && domEventName === "scroll";
 
 	// 触发accumulateSinglePhaseListeners()传入 fiber + React事件名称（比如onClick），通过fiber.props上的属性，获取对应的监听方法
-	const listeners = accumulateSinglePhaseListeners(
+	const listeners: DispatchListener[] = accumulateSinglePhaseListeners(
 		targetInst,
 		reactName,
 		nativeEvent.type,
@@ -140,6 +141,7 @@ function extractEvents(
 	);
 	if (listeners.length > 0) {
 		// 创建合成事件对象_event = new SyntheticEventCtor()
+		// @ts-ignore
 		const event = new SyntheticEventCtor(
 			reactName,
 			reactEventType,
@@ -180,9 +182,9 @@ export function accumulateSinglePhaseListeners(
 
 		if (instance.tag === HostComponent && stateNode !== null) {
 			if (reactEventName) {
-				const listener = getListener(instance);
+				const listener = getListener(instance, reactEventName);
 				if (listener) {
-					listeners.push(createDispatchListener());
+					listeners.push(createDispatchListener(instance, listener, stateNode));
 				}
 			}
 		}
@@ -192,6 +194,19 @@ export function accumulateSinglePhaseListeners(
 
 		instance = instance.return;
 	}
+	return listeners;
+}
+
+function createDispatchListener(
+	instance: null | Fiber,
+	listener: Function,
+	currentTarget: EventTarget,
+): DispatchListener {
+	return {
+		instance,
+		listener,
+		currentTarget,
+	};
 }
 
 export { registerSimpleEvents as registerEvents, extractEvents };

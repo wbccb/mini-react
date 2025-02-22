@@ -1,5 +1,5 @@
 import { Fiber } from "react-reconciler";
-import { Container } from "./ReactDOMHostConfig";
+import { Container, Instance, Props } from "./ReactDOMHostConfig";
 
 const randomKey = Math.random().toString(36).slice(2);
 const internalInstanceKey = "__reactFiber$" + randomKey;
@@ -36,4 +36,12 @@ export function getClosestInstanceFromNode(targetNode: Node) {
 		parentNode = targetNode.parentNode;
 	}
 	return null;
+}
+
+export function getFiberCurrentPropsFromNode(node: Instance): Props {
+	return (node as any)[internalPropsKey] || null;
+}
+
+export function updateFiberProps(node: Instance, props: Props): void {
+	(node as any)[internalPropsKey] = props;
 }

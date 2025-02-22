@@ -25,6 +25,7 @@ import {
 } from "./ReactWorkTags";
 import {
 	Instance,
+	Props,
 	removeChild,
 	removeChildFromContainer,
 } from "react-dom/src/client/ReactDOMHostConfig";
@@ -32,6 +33,7 @@ import { FiberNode } from "./ReactFiber";
 import { updateDOMProperties } from "react-dom/src/client/ReactDOMComponent";
 import { HookFlags, HookHasEffect, HookLayout, HookPassive } from "./ReactHookEffectTags";
 import { FunctionComponentUpdateQueue } from "./ReactFiberHooks";
+import { updateFiberProps } from "react-dom/src/client/ReactDOMComponentTree";
 
 let nextEffect: Fiber | null = null;
 
@@ -79,7 +81,7 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
 					const updatePayload = finishedWork.updateQueue;
 					finishedWork.updateQueue = null;
 					if (updatePayload !== null) {
-						commitUpdate(instance, updatePayload);
+						commitUpdate(instance, updatePayload, newProps);
 					}
 				}
 			}
@@ -269,8 +271,9 @@ function recursivelyTraverseDeletionEffects(
 	}
 }
 
-function commitUpdate(domElement: HTMLElement, updatePayload: any) {
+function commitUpdate(domElement: HTMLElement, updatePayload: any, newProps: Props) {
 	updateDOMProperties(domElement, updatePayload);
+	updateFiberProps(domElement, newProps);
 }
 
 function commitPlacement(finishedWork: Fiber) {

@@ -14,7 +14,8 @@ import {
 import { NoFlags, Snapshot, Update } from "./ReactFiberFlags";
 import { diffProperties } from "react-dom/src/client/ReactDOMComponent";
 import { popProvider } from "./ReactFiberNewContext";
-import { precacheFiberNode } from "react-dom/src/client/ReactDOMComponentTree";
+import { precacheFiberNode, updateFiberProps } from "react-dom/src/client/ReactDOMComponentTree";
+import { Props } from "react-dom/src/client/ReactDOMHostConfig";
 
 function completeWork(
 	current: Fiber | null,
@@ -30,7 +31,7 @@ function completeWork(
 				// 更新逻辑
 				updateHostComponent(current, workInProgress, type, newProps);
 			} else {
-				const instance = createInstance(workInProgress, type); // 创建dom
+				const instance = createInstance(workInProgress, newProps, type); // 创建dom
 				appendAllChildren(instance, workInProgress); //
 				workInProgress.stateNode = instance;
 				finalizeInitialChildren(instance, type);
@@ -79,9 +80,10 @@ function completeWork(
 	);
 }
 
-function createInstance(workInProgress: Fiber, type: string) {
+function createInstance(workInProgress: Fiber, props: Props, type: string) {
 	const domElement = document.createElement(type);
 	precacheFiberNode(workInProgress, domElement);
+	updateFiberProps(domElement, props);
 	return domElement;
 }
 
