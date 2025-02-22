@@ -160,6 +160,7 @@ function dispatchEventsForPlugins(
 ): void {
 	const nativeEventTarget = getEventTarget(nativeEvent);
 	const dispatchQueue: DispatchQueue = [];
+
 	extractEvents(
 		dispatchQueue,
 		domEventName,
@@ -200,11 +201,10 @@ export function processDispatchQueue(
 ): void {
 	const inCapturePhase = (eventSystemFlags & IS_CAPTURE_PHASE) !== 0;
 	for (let i = 0; i < dispatchQueue.length; i++) {
-		const {event, listeners} = dispatchQueue[i];
+		const { event, listeners } = dispatchQueue[i];
 		processDispatchQueueItemsInOrder(event, listeners, inCapturePhase);
 	}
 }
-
 
 function processDispatchQueueItemsInOrder(
 	event: ReactSyntheticEvent,
@@ -214,7 +214,7 @@ function processDispatchQueueItemsInOrder(
 	let previousInstance;
 	if (inCapturePhase) {
 		for (let i = dispatchListeners.length - 1; i >= 0; i--) {
-			const {instance, currentTarget, listener} = dispatchListeners[i];
+			const { instance, currentTarget, listener } = dispatchListeners[i];
 			if (instance !== previousInstance && event.isPropagationStopped()) {
 				return;
 			}
@@ -223,7 +223,7 @@ function processDispatchQueueItemsInOrder(
 		}
 	} else {
 		for (let i = 0; i < dispatchListeners.length; i++) {
-			const {instance, currentTarget, listener} = dispatchListeners[i];
+			const { instance, currentTarget, listener } = dispatchListeners[i];
 			if (instance !== previousInstance && event.isPropagationStopped()) {
 				return;
 			}
@@ -238,12 +238,11 @@ function executeDispatch(
 	listener: Function,
 	currentTarget: EventTarget,
 ): void {
-	const type = event.type || 'unknown-event';
+	const type = event.type || "unknown-event";
 	event.currentTarget = currentTarget;
 	// @ts-ignore
 	listener.call(this, type, undefined, event);
 	event.currentTarget = null;
 }
-
 
 export { listenToAllSupportedEvents, dispatchEventForPluginEventSystem };

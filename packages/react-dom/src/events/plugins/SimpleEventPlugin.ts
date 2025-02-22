@@ -34,7 +34,7 @@ function extractEvents(
 	// 创建合成事件对象_event = new SyntheticEventCtor()
 	// 将合成事件对象 + fiber.props 获取到的回调函数数组加入到 dispatchQueue 中
 
-	const reactName = topLevelEventsToReactNames[domEventName];
+	const reactName = topLevelEventsToReactNames.get(domEventName);
 	if (!reactName) {
 		return;
 	}
