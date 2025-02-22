@@ -81,7 +81,7 @@ function completeWork(
 
 function createInstance(workInProgress: Fiber, type: string) {
 	const domElement = document.createElement(type);
-	precacheFiberNode(workInProgress, type);
+	precacheFiberNode(workInProgress, domElement);
 	return domElement;
 }
 
