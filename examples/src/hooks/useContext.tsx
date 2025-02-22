@@ -34,18 +34,11 @@ export default function TestUseContext() {
 		setTheme((prevTheme: string) => (prevTheme === "light" ? "dark" : "light"));
 	}, []);
 
-	setTimeout(() => {
-		increateAge = document.getElementsByTagName("button");
-		console.error("useEffect_LayoutEffect.tsx", increateAge);
-		if (increateAge && increateAge[0]) {
-			console.error("useEffect_LayoutEffect.tsx increateAge[0]", increateAge[0]);
-			increateAge[0].addEventListener("click", stateFn);
-		}
-	}, 0);
-
 	return (
 		<ThemeContext.Provider value={theme}>
-			<button id="我是useState的button">改变theme</button>
+			<button id="我是useState的button" onClick={stateFn}>
+				改变theme
+			</button>
 			<ContextChild />
 		</ThemeContext.Provider>
 	);
